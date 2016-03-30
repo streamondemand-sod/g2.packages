@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-    Genesi2 Add-on
+    Genesi2 Add-on Package
     Copyright (C) 2016 J0rdyZ65
 
     This program is free software: you can redistribute it and/or modify
@@ -24,7 +24,7 @@ site = 'github://J0rdyz65/genesi2.packages/urlresolvers'
     The 'github://' prefix is a shorthand for 'https://api.github.com/repos/'
 """
 
-settings = settings = 'addon://script.module.urlresolver'
+settings = 'addon://script.module.urlresolver'
 """
     The :settings: attribute is the path to the file to monitor to invalidate the modules' cache.
     The addon://PLUGINID filename is translated into the addon settings.xml file found under
