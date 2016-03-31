@@ -18,13 +18,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-site = 'github://J0rdyz65/genesi2.packages/contents/eldorado.urlresolver'
+site = 'github://J0rdyz65/genesi2.packages/contents/italian-channels'
 """
     The :site: attribute is the URL used to fetch the directory content in JSON format from GitHub.
     The 'github://' prefix is a shorthand for 'https://api.github.com/repos/'
 """
 
-settings = 'addon://script.module.urlresolver'
+settings = 'addon://'
 """
     The :settings: attribute is the path to the file to monitor to invalidate the modules' cache.
     The addon://PLUGINID filename is translated into the addon settings.xml file found under
