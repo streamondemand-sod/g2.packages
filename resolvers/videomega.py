@@ -18,11 +18,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-
-import re,urlparse
+import re
+import urlparse
 
 from resources.lib.libraries import client
-from resources.lib.libraries import jsunpack
+from lib import jsunpack
 
 
 netloc = ['videomega.tv']

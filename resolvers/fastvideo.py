@@ -18,12 +18,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-
-import re,urllib
+import re
 
 from resources.lib.libraries import client
-from resources.lib.libraries import jsunpack
 from resources.lib.resolvers import ResolverError
+
+from lib import jsunpack
 
 
 netloc = ['fastvideo.in', 'fastvideo.me', 'faststream.in', 'rapidvideo.ws']
