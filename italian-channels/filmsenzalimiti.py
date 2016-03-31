@@ -18,12 +18,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-
 import urllib
 import urlparse
 import unidecode
 
-from resources.lib.libraries import cleantitle, client
+from resources.lib.libraries import cleantitle
+from resources.lib.libraries import client
 
 
 class source:

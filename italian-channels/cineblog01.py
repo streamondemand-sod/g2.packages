@@ -18,14 +18,16 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-
 import re
 import time
 import urllib
 import urlparse
 import unidecode
 
-from resources.lib.libraries import cleantitle, client, jsunpack
+from resources.lib.libraries import cleantitle
+from resources.lib.libraries import client
+
+from lib import jsunpack
 
 
 # TODO: Remove the class object and implement as an hierarchy like the resolvers
