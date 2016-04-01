@@ -24,7 +24,9 @@ from resources.lib.libraries import client
 
 
 netloc = ['openload.io', 'openload.co']
-
+config = {
+    'captcha': 'type="bool", label="Use Captcha", default="false"',
+}
 
 def resolve(url):
     result = client.request(url)

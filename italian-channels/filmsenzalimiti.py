@@ -26,61 +26,60 @@ from resources.lib.libraries import cleantitle
 from resources.lib.libraries import client
 
 
-class source:
-    def __init__(self):
-        self.base_link = 'http://www.filmsenzalimiti.co'
-        self.search_link = '/?s=%s'
-        self.provider = 'filmsenzalimiti'
+base_link = 'http://www.filmsenzalimiti.co'
+sarch_link = '/?s=%s'
 
-    def get_movie(self, dbids, title, year, language=None):
-        query = self.search_link % urllib.quote_plus(title)
-        query = urlparse.urljoin(self.base_link, query)
 
-        result = client.request(query)
+def get_movie(dbids, title, year, language=None):
+    query = search_link % urllib.quote_plus(title)
+    query = urlparse.urljoin(base_link, query)
 
-        result = client.parseDOM(result, 'div', attrs={'class': 'post-item-side'})[0]
+    result = client.request(query)
 
-        urls = client.parseDOM(result, 'a', ret='href')
-        titles = client.parseDOM(result, 'img', attrs={'class': 'post-side-img'}, ret='title')
-        titles = [unidecode.unidecode(client.replaceHTMLCodes(t)) for t in titles]
+    result = client.parseDOM(result, 'div', attrs={'class': 'post-item-side'})[0]
 
-        title = cleantitle.movie(title)
-        url = [u for u, t in map(None, urls, titles) if t and title == cleantitle.movie(t)][0]
+    urls = client.parseDOM(result, 'a', ret='href')
+    titles = client.parseDOM(result, 'img', attrs={'class': 'post-side-img'}, ret='title')
+    titles = [unidecode.unidecode(client.replaceHTMLCodes(t)) for t in titles]
 
-        url = urlparse.urlparse(url).path
+    title = cleantitle.movie(title)
+    url = [u for u, t in map(None, urls, titles) if t and title == cleantitle.movie(t)][0]
 
-        return url
+    url = urlparse.urlparse(url).path
 
-    def get_sources(self, url):
-        url = urlparse.urljoin(self.base_link, url)
+    return url
 
-        result = client.request(url)
 
-        result = result.decode('iso-8859-1').encode('utf-8')
-        result = client.parseDOM(result, 'ul', attrs={'class': 'host'})[1]
+def get_sources(url):
+    url = urlparse.urljoin(base_link, url)
 
-        # E.g. <span class="b"><img src="http://imagerip.net/images/2015/08/14/rapidvideo.png" alt="Rapidvideo" height="10"> Rapidvideo</span>
-        names = [client.parseDOM(i, 'img', ret='alt')[0] for i in client.parseDOM(result, 'span', attrs={'class': 'b'})]
+    result = client.request(url)
 
-        # E.g. a href="http://www.rapidvideo.org/eskf5x2cqghi/Deadpool.2016.iTALiAN.MD.TS.XviD-iNCOMiNG.avi.html" rel="nofollow" target="_blank" class="external">
-        urls = client.parseDOM(result, 'a', attrs={'class': 'external'}, ret='href')
+    result = result.decode('iso-8859-1').encode('utf-8')
+    result = client.parseDOM(result, 'ul', attrs={'class': 'host'})[1]
 
-        # E.g. <span class="a"><i class="fa fa-circle-o fa-lg"></i> Streaming</span>
-        actions = client.parseDOM(result, 'span', attrs={'class': 'a'})
+    # E.g. <span class="b"><img src="http://imagerip.net/images/2015/08/14/rapidvideo.png" alt="Rapidvideo" height="10"> Rapidvideo</span>
+    names = [client.parseDOM(i, 'img', ret='alt')[0] for i in client.parseDOM(result, 'span', attrs={'class': 'b'})]
 
-        # E.g. <span class="d">360p</span>
-        qualities = client.parseDOM(result, 'span', attrs={'class': 'd'})
+    # E.g. a href="http://www.rapidvideo.org/eskf5x2cqghi/Deadpool.2016.iTALiAN.MD.TS.XviD-iNCOMiNG.avi.html" rel="nofollow" target="_blank" class="external">
+    urls = client.parseDOM(result, 'a', attrs={'class': 'external'}, ret='href')
 
-        # E.g. <a href="http://www.filmsenzalimiti.co/genere/subita" rel="category tag">Film Sub Ita</a>
-        info = client.parseDOM(result, 'a', attrs={'rel': r'category\s+tag'})
+    # E.g. <span class="a"><i class="fa fa-circle-o fa-lg"></i> Streaming</span>
+    actions = client.parseDOM(result, 'span', attrs={'class': 'a'})
 
-        sources = []
-        for n, u, a, q in map(None, names, urls, actions, qualities):
-            if a and 'Streaming' in a:
-                quality = 'HD' if q.strip() in ['720p', '1080p'] else 'SD'
-                sources.append({'source': n.encode('utf-8'), 'quality': quality, 'provider': self.provider, 'url': u.encode('utf-8')})
+    # E.g. <span class="d">360p</span>
+    qualities = client.parseDOM(result, 'span', attrs={'class': 'd'})
 
-        if len(info):
-            for s in sources: s['info'] = info[0]
+    # E.g. <a href="http://www.filmsenzalimiti.co/genere/subita" rel="category tag">Film Sub Ita</a>
+    info = client.parseDOM(result, 'a', attrs={'rel': r'category\s+tag'})
 
-        return sources
+    sources = []
+    for n, u, a, q in map(None, names, urls, actions, qualities):
+        if a and 'Streaming' in a:
+            quality = 'HD' if q.strip() in ['720p', '1080p'] else 'SD'
+            sources.append({'source': n.encode('utf-8'), 'quality': quality, 'url': u.encode('utf-8')})
+
+    if len(info):
+        for s in sources: s['info'] = info[0]
+
+    return sources
