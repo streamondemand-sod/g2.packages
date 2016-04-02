@@ -41,12 +41,12 @@ class Item:
 sod_addon_path = xbmcaddon.Addon('plugin.video.streamondemand').getAddonInfo('path')
 sys.path.append(sod_addon_path)
 
-#from servers import servertools
+from servers import servertools
 
 exclude = [
-    'biblioteca',
-    'buscador',
-    'corsaronero',
+    'biblioteca',       # global search channel
+    'buscador',         # global search channel
+    'corsaronero',      # torrent only
 ]
 
 
@@ -63,9 +63,9 @@ def get_sources(url):
     title = query['title'][0]
     year = query['year'][0]
     language = query['language'][0]
-
-    sources = []
     cleartitle = cleantitle.movie(title)
+
+    sources = {}
     for package, module, is_pkg in pkgutil.walk_packages([os.path.join(sod_addon_path, 'channels')]):
         if is_pkg or module in exclude: continue
 
@@ -86,14 +86,15 @@ def get_sources(url):
 
         items = [item for item in items if cleartitle == cleantitle.movie(item.fulltitle)]
         if items == []:
-            log.debug('italian-isod.get_sources: %s.search: no matches'%module)
+            log.debug('italian-isod.get_sources: %s.search: no title matches'%module)
 
         for i, item in enumerate(items):
             if hasattr(m, item.action):
+                # Channel specific function to retrieve the sources
                 sitems = getattr(m, item.action)(item)
             else:
-                sitems = []
-                # sitems = servertools.find_video_items(item)
+                # Generic function to retrieve the sources
+                sitems = servertools.find_video_items(item)
 
             if sitems == []:
                 log.debug('italian-isod.get_sources: %s.search[%d]: no sources for url=%s'%(module, i+1, item.url))
@@ -103,13 +104,13 @@ def get_sources(url):
                     log.debug('italian-isod.get_sources: %s.search[%d/%d]: no play action for url=%s'%(module, i+1, j+1, sitem.url))
                     continue
 
-                # Remove known tags and year
                 t = sitem.title
+                # Extract the stream quality if provided in the title
                 quality = 'HD' if re.search(r'\s+\[HD\]\s+', t) else 'SD'
+                # Remove known tags and year
                 t = re.sub(r'\[HD\]', '', t)
                 t = re.sub(r'\(\d{4}\)', '', t)
                 t = re.sub(r'\[/?COLOR[^\]]*\]', '', t)
-
                 # Extract the host if possible
                 try:
                     host = re.search(r'\s+-\s+\[([^\]]+)\]', t).group(1)
@@ -120,17 +121,18 @@ def get_sources(url):
                         host = ''
 
                 if not hasattr(m, sitem.action):
-                    log.debug('italian-isod.get_sources: %s.search[%d/%d]: host=%s, quality=%s, url=%s, title=%s'%(
-                        module, i+1, j+1, host, quality, sitem.url, sitem.title))
-                    sources.append({'source': host, 'quality': quality, 'url': sitem.url})
+                    # No channel specific resolver
+                    url = sitem.url
                 else:
+                    # Channel specific resolver to run first
                     pitems = getattr(m, sitem.action)(sitem)
                     if len(pitems) == 0:
-                        log.debug('italian-isod.get_sources: %s.search[%d/%d]: no playable url for url=%s'%(
+                        log.debug('italian-isod.get_sources: %s.search[%d/%d]: no sources for url=%s'%(
                             module, i+1, j+1, sitem.url))
-                    else:                        
-                        log.debug('italian-isod.get_sources: %s.search[%d/%d]: host=%s, quality=%s, %s(url)=%s, title=%s'%(
-                            module, i+1, j+1, host, quality, sitem.action, pitems[0].url, sitem.title))
-                        sources.append({'source': host, 'quality': quality, 'url': pitems[0].url})
+                        continue
+                    url = pitems[0].url
+                log.debug('italian-isod.get_sources: %s.search[%d/%d]: host=%s, quality=%s, url=%s, title=%s'%(
+                    module, i+1, j+1, host, quality, url, sitem.title))
+                sources[url] = {'source': host, 'quality': quality, 'info': module, 'url': url}
 
-    return sources
+    return sources.values()
