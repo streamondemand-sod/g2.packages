@@ -25,114 +25,151 @@ import sys
 import urllib
 import urlparse
 
+import xbmc
 import xbmcaddon
 
 from resources.lib.libraries import cleantitle
 from resources.lib.libraries import client
 from resources.lib.libraries import log
 
-class Item:
-    def __init__(self, category=''):
-        self.category = category
-        self.channel = ''
-        self.extra = category
-        self.url = ''
 
-sod_addon_path = xbmcaddon.Addon('plugin.video.streamondemand').getAddonInfo('path')
-sys.path.append(sod_addon_path)
+__all__ = ['sub_modules', 'get_movie', 'get_sources']
 
-from servers import servertools
 
-exclude = [
+sod_addon_id = 'plugin.video.streamondemand'
+sod_addon_path = xbmcaddon.Addon(sod_addon_id).getAddonInfo('path')
+sod_addon_channels_package = 'channels'
+sod_addon_channels_path = os.path.join(sod_addon_path, sod_addon_channels_package)
+
+_excluded_channels = [
     'biblioteca',       # global search channel
     'buscador',         # global search channel
     'corsaronero',      # torrent only
 ]
 
+if xbmc.getCondVisibility('System.HasAddon(%s)'%sod_addon_id):
+    sub_modules = []
+    sys.path.append(sod_addon_path)
+    for package, module, is_pkg in pkgutil.walk_packages([sod_addon_channels_path]):
+        if is_pkg or module in _excluded_channels: continue
+        try:
+            m = getattr(__import__(sod_addon_channels_package, globals(), locals(), [module], -1), module)
+        except Exception as e:
+            log.notice('italian-isod: %s: %s'%(module, e))
+            continue
+        if hasattr(m, 'search'):
+            sub_modules.append(module)
+    sys.path.pop()
 
-def get_movie(dbids, title, year, language='it'):
-    return urllib.urlencode({
-        'title': title,
-        'year': year,
-        'language': language,
-        })
 
+def get_movie(module, dbids, title, year, language='it'):
+    sys.path.append(sod_addon_path)
 
-def get_sources(url):
-    query = urlparse.parse_qs(url)
-    title = query['title'][0]
-    year = query['year'][0]
-    language = query['language'][0]
+    from servers import servertools
+    from core.item import Item
+
+    try:
+        m = getattr(__import__(sod_addon_channels_package, globals(), locals(), [module[2]], -1), module[2])
+    except Exception as e:
+        sys.path.pop()
+        log.notice('italian-isod.get_movie: %s: %s'%(module[2], e))
+        return None
+    try:
+        items = m.search(Item(), title)
+    except Exception as e:
+        sys.path.pop()
+        log.notice('italian-isod.get_movie: %s.search(%s, %s, %s): %s'%(module, title, year, language, e))
+        return None
+
     cleartitle = cleantitle.movie(title)
+    # TODO: [(year)] filtering if returned in the title
+    # TODO: [(sub-ita)] filtering if returned in the title
+    items = [item for item in items if cleartitle == cleantitle.movie(item.fulltitle)]
+
+    if len(items) > 1:
+        log.notice('italian-isod.get_movie: %s.search(%s, %s, %s): %d matches'%(module, title, year, language, len(items)))
+
+    sys.path.pop()
+    return None if items == [] else '%s@%s'%(items[0].action, items[0].url)
+
+
+def get_sources(module, url):
+    sys.path.append(sod_addon_path)
+
+    from servers import servertools
+    from core.item import Item
+
+    try:
+        m = getattr(__import__(sod_addon_channels_package, globals(), locals(), [module[2]], -1), module[2])
+    except Exception as e:
+        sys.path.pop()
+        log.notice('italian-isod.%s: %s'%(module[2], e))
+        return []
+
+    action, url = url.split('@', 1)
+    item = Item(action=action, url=url)
+
+    try:
+        if hasattr(m, item.action):
+            # Channel specific function to retrieve the sources
+            sitems = getattr(m, item.action)(item)
+        else:
+            # Generic function to retrieve the sources
+            item.action = 'servertools.find_video_items'
+            sitems = servertools.find_video_items(item)
+    except:
+        sitems = []
+
+    if sitems == []:
+        log.debug('italian-isod.get_sources: %s.%s: no sources for url=%s'%(module[2], item.action, item.url))
 
     sources = {}
-    for package, module, is_pkg in pkgutil.walk_packages([os.path.join(sod_addon_path, 'channels')]):
-        if is_pkg or module in exclude: continue
-
-        try:
-            m = getattr(__import__('channels', globals(), locals(), [module], -1), module)
-        except Exception as e:
-            import traceback
-            log.notice(traceback.format_exc())
+    for sitem in sitems:
+        if sitem.action != 'play':
+            log.debug('italian-isod.get_sources: %s.%s: play action not specified for url=%s'%(module[2], item.action, sitem.url))
             continue
-        if not hasattr(m, 'search'): continue
 
+        t = sitem.title
+        # Extract the stream quality if provided in the title
+        quality = 'HD' if re.search(r'[^\w]HD[^\w]', t) else 'SD'
+        # Remove known tags and year
+        t = re.sub(r'\[HD\]', '', t)
+        t = re.sub(r'\(\d{4}\)', '', t)
+        # Remove the [COLOR ...]<info>[/COLOR] tags and collect the <info>
+        info_tags = [module[2]]
+        def collect_color_tags(match):
+            info_tags.append(match.group(1))
+            return ''
+        t = re.sub(r'\[COLOR\s+[^\]]+\]([^\[]*)\[/COLOR\]', collect_color_tags, t)
+        t = re.sub(r'\[/?COLOR[^\]]*\]', '', t)
+        # Extract the host if possible
         try:
-            items = m.search(Item(), title)
+            host = re.search(r'\s+-\s+\[([^\]]+)\]', t).group(1)
         except:
-            import traceback
-            log.notice(traceback.format_exc())
-            continue
+            try:
+                host = re.search(r'\[([^\]]+)\]', t).group(1)
+            except:
+                host = ''
 
-        items = [item for item in items if cleartitle == cleantitle.movie(item.fulltitle)]
-        if items == []:
-            log.debug('italian-isod.get_sources: %s.search: no title matches'%module)
+        if not hasattr(m, sitem.action):
+            # No channel specific resolver
+            url = sitem.url
+            action = ''
+        else:
+            # Channel specific resolver to run first
+            try:
+                pitems = getattr(m, sitem.action)(sitem)
+            except:
+                pitems = []
+            if len(pitems) == 0:
+                log.debug('italian-isod.get_sources: %s.%s: no sources for url=%s'%(module[2], sitem.action, sitem.url))
+                continue
+            url = pitems[0].url
+            action = pitems[0].action
 
-        for i, item in enumerate(items):
-            if hasattr(m, item.action):
-                # Channel specific function to retrieve the sources
-                sitems = getattr(m, item.action)(item)
-            else:
-                # Generic function to retrieve the sources
-                sitems = servertools.find_video_items(item)
+        log.debug('italian-isod.get_sources: %s.%s: host=%s, quality=%s, url=%s, action=%s, title=%s'%(
+            module[2], sitem.action, host, quality, url, action, sitem.title))
+        sources[url] = {'source': host, 'quality': quality, 'info': ' '.join(info_tags), 'url': url}
 
-            if sitems == []:
-                log.debug('italian-isod.get_sources: %s.search[%d]: no sources for url=%s'%(module, i+1, item.url))
-
-            for j, sitem in enumerate(sitems):
-                if sitem.action != 'play':
-                    log.debug('italian-isod.get_sources: %s.search[%d/%d]: no play action for url=%s'%(module, i+1, j+1, sitem.url))
-                    continue
-
-                t = sitem.title
-                # Extract the stream quality if provided in the title
-                quality = 'HD' if re.search(r'\s+\[HD\]\s+', t) else 'SD'
-                # Remove known tags and year
-                t = re.sub(r'\[HD\]', '', t)
-                t = re.sub(r'\(\d{4}\)', '', t)
-                t = re.sub(r'\[/?COLOR[^\]]*\]', '', t)
-                # Extract the host if possible
-                try:
-                    host = re.search(r'\s+-\s+\[([^\]]+)\]', t).group(1)
-                except:
-                    try:
-                        host = re.search(r'\[([^\]]+)\]', t).group(1)
-                    except:
-                        host = ''
-
-                if not hasattr(m, sitem.action):
-                    # No channel specific resolver
-                    url = sitem.url
-                else:
-                    # Channel specific resolver to run first
-                    pitems = getattr(m, sitem.action)(sitem)
-                    if len(pitems) == 0:
-                        log.debug('italian-isod.get_sources: %s.search[%d/%d]: no sources for url=%s'%(
-                            module, i+1, j+1, sitem.url))
-                        continue
-                    url = pitems[0].url
-                log.debug('italian-isod.get_sources: %s.search[%d/%d]: host=%s, quality=%s, url=%s, title=%s'%(
-                    module, i+1, j+1, host, quality, url, sitem.title))
-                sources[url] = {'source': host, 'quality': quality, 'info': module, 'url': url}
-
+    sys.path.pop()
     return sources.values()
