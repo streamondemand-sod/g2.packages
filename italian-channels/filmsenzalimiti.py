@@ -26,13 +26,16 @@ from resources.lib.libraries import cleantitle
 from resources.lib.libraries import client
 
 
-base_link = 'http://www.filmsenzalimiti.co'
-sarch_link = '/?s=%s'
+__all__ = ['get_movie', 'get_sources']
 
 
-def get_movie(dbids, title, year, language=None):
-    query = search_link % urllib.quote_plus(title)
-    query = urlparse.urljoin(base_link, query)
+_base_link = 'http://www.filmsenzalimiti.co'
+_search_link = '/?s=%s'
+
+
+def get_movie(module, dbids, title, year, language=None):
+    query = _search_link % urllib.quote_plus(title)
+    query = urlparse.urljoin(_base_link, query)
 
     result = client.request(query)
 
@@ -50,8 +53,8 @@ def get_movie(dbids, title, year, language=None):
     return url
 
 
-def get_sources(url):
-    url = urlparse.urljoin(base_link, url)
+def get_sources(module, url):
+    url = urlparse.urljoin(_base_link, url)
 
     result = client.request(url)
 

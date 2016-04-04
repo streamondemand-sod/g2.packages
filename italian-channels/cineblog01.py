@@ -30,13 +30,17 @@ from resources.lib.libraries import client
 from lib import jsunpack
 
 
-base_link = 'http://www.cb01.co'
-search_link = '/?s=%s'
+__all__ = ['get_movie', 'get_sources', 'resolve']
 
 
-def get_movie(dbids, title, year, language='it'):
+_base_link = 'http://www.cb01.co'
+_search_link = '/?s=%s'
+
+
+def get_movie(module, dbids, title, year, language='it'):
     """
     Input:
+        module      This source module idenfier represented as a list: [package_name, module_name [,sub_module_name]]
         dbids       A dictionary with the identifier of the title in varius DB (imdb, tmdb)
         title       The movie title
         year        The movie release year
@@ -46,8 +50,8 @@ def get_movie(dbids, title, year, language='it'):
 
     NOTE: the output url is cached for later reuse.
     """
-    query = search_link % urllib.quote_plus(title)
-    query = urlparse.urljoin(base_link, query)
+    query = _search_link % urllib.quote_plus(title)
+    query = urlparse.urljoin(_base_link, query)
 
     result = _cloudflare(query)
 
@@ -85,9 +89,10 @@ def get_movie(dbids, title, year, language='it'):
     return url
 
 
-def get_sources(url):
+def get_sources(module, url):
     """
     Input:
+        module      This source module idenfier represented as a list: [package_name, module_name [,sub_module_name]]
         url         The url previously returned by the get_movie/get_episode
 
     Output: A list of dictionary with the following attributes:
@@ -98,7 +103,7 @@ def get_sources(url):
 
     NOTE: the output list is cached for later reuse.
     """
-    url = urlparse.urljoin(base_link, url)
+    url = urlparse.urljoin(_base_link, url)
 
     result = client.request(url)
 
@@ -137,11 +142,12 @@ def get_sources(url):
     return sources
 
 
-def resolve(url):
+def resolve(module, url):
     """
     Optional method in case the sources site provides the url ready for the resolvers
 
     Input:
+        module      This source module idenfier represented as a list: [package_name, module_name [,sub_module_name]]
         url         The url returned by the get_sources
 
     Output: the url to be resolved via the resolvers
@@ -175,7 +181,7 @@ def _cloudflare(url):
     rheaders = { 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; rv:38.0) Gecko/20100101 Firefox/38.0' }
 
     # Do expect an HTTP error on the first request
-    headers = client.request(url, headers=rheaders, referer=base_link, output='headers', error=True)
+    headers = client.request(url, headers=rheaders, referer=_base_link, output='headers', error=True)
 
     if not 'refresh' in headers:
         cookie = None
@@ -186,6 +192,6 @@ def _cloudflare(url):
         time.sleep(refresh_timeout)
 
         u = '%s://%s' % (urlparse.urlparse(url).scheme, urlparse.urlparse(url).netloc)
-        cookie = client.request('%s%s'%(u, refresh_url), headers=rheaders, referer=base_link, output='cookie')
+        cookie = client.request('%s%s'%(u, refresh_url), headers=rheaders, referer=_base_link, output='cookie')
 
-    return client.request(url, headers=rheaders, referer=base_link, cookie=cookie)
+    return client.request(url, headers=rheaders, referer=_base_link, cookie=cookie)
