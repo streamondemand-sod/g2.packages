@@ -37,9 +37,8 @@ __all__ = ['sub_modules', 'get_movie', 'get_sources']
 
 
 sod_addon_id = 'plugin.video.streamondemand'
-sod_addon_path = xbmcaddon.Addon(sod_addon_id).getAddonInfo('path')
 sod_addon_channels_package = 'channels'
-sod_addon_channels_path = os.path.join(sod_addon_path, sod_addon_channels_package)
+sod_addon_channels_path = os.path.join(xbmcaddon.Addon(sod_addon_id).getAddonInfo('path'), sod_addon_channels_package)
 
 _excluded_channels = [
     'biblioteca',       # global search channel
@@ -49,22 +48,19 @@ _excluded_channels = [
 
 if xbmc.getCondVisibility('System.HasAddon(%s)'%sod_addon_id):
     sub_modules = []
-    sys.path.append(sod_addon_path)
+    log.notice('italian-isod: sys.path=%s'%sys.path)
     for package, module, is_pkg in pkgutil.walk_packages([sod_addon_channels_path]):
         if is_pkg or module in _excluded_channels: continue
         try:
             m = getattr(__import__(sod_addon_channels_package, globals(), locals(), [module], -1), module)
         except Exception as e:
-            log.notice('italian-isod: %s: %s'%(module, e))
+            log.notice('italian-isod: from %s import %s: %s'%(sod_addon_channels_package, module, e))
             continue
         if hasattr(m, 'search'):
             sub_modules.append(module)
-    sys.path.pop()
 
 
 def get_movie(module, dbids, title, year, language='it'):
-    sys.path.append(sod_addon_path)
-
     from servers import servertools
     from core.item import Item
 
@@ -89,13 +85,10 @@ def get_movie(module, dbids, title, year, language='it'):
     if len(items) > 1:
         log.notice('italian-isod.get_movie: %s.search(%s, %s, %s): %d matches'%(module, title, year, language, len(items)))
 
-    sys.path.pop()
     return None if items == [] else '%s@%s'%(items[0].action, items[0].url)
 
 
 def get_sources(module, url):
-    sys.path.append(sod_addon_path)
-
     from servers import servertools
     from core.item import Item
 

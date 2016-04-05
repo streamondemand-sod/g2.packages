@@ -24,10 +24,7 @@ site = 'github://J0rdyz65/genesi2.packages/contents/italian-isod'
     The 'github://' prefix is a shorthand for 'https://api.github.com/repos/'
 """
 
-settings = 'addon://plugin.video.streamondemand'
+addons = ['plugin.video.streamondemand']
 """
-    The :settings: attribute is the path to the file to monitor to invalidate the modules' cache.
-    The addon://PLUGINID filename is translated into the addon settings.xml file found under
-    the special://userdata/addon_data/PLUGINID directory. If the PLIGINID is missing, it is
-    used the current addon id. Any other filename is taken as is.
+    TODO: docstring
 """
