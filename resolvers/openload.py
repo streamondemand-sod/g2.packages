@@ -23,19 +23,20 @@ import re
 from resources.lib.libraries import client
 
 
+__all__ = ['netloc', 'resolve']
+
+
 netloc = ['openload.io', 'openload.co']
-config = {
-    'captcha': 'type="bool", label="Use Captcha", default="false"',
-}
+
 
 def resolve(url):
     result = client.request(url)
     result = client.parseDOM(result, 'video')[0]
     result = client.parseDOM(result, 'script')[0]
-    return decode_openload(result)
+    return _decode_openload(result)
 
 
-def decode_openload(aastring):
+def _decode_openload(aastring):
     aastring = aastring.encode('utf-8')
     aastring = aastring.replace(
         "(\xef\xbe\x9f\xd0\x94\xef\xbe\x9f)[\xef\xbe\x9f\xce\xb5\xef\xbe\x9f]+(o\xef\xbe\x9f\xef\xbd\xb0\xef\xbe\x9fo)+ ((c^_^o)-(c^_^o))+ (-~0)+ (\xef\xbe\x9f\xd0\x94\xef\xbe\x9f) ['c']+ (-~-~1)+",
@@ -68,7 +69,7 @@ def decode_openload(aastring):
     decodestring = decodestring.replace("+", "")
     decodestring = decodestring.replace(" ", "")
 
-    decodestring = decode(decodestring)
+    decodestring = _decode(decodestring)
     decodestring = decodestring.replace("\\/", "/")
 
     if 'toString' in decodestring:
@@ -77,7 +78,7 @@ def decode_openload(aastring):
         for rep1 in match:
             match1 = re.compile('(\\d+),(\\d+)', re.DOTALL | re.IGNORECASE).findall(rep1)
             base2 = base + int(match1[0][0])
-            rep12 = base10toN(int(match1[0][1]), base2)
+            rep12 = _base10toN(int(match1[0][1]), base2)
             decodestring = decodestring.replace(rep1, rep12)
         decodestring = decodestring.replace('+', '')
         decodestring = decodestring.replace('"', '')
@@ -88,13 +89,13 @@ def decode_openload(aastring):
     return videourl
 
 
-def decode(encoded):
+def _decode(encoded):
     for octc in (c for c in re.findall(r'\\(\d{2,3})', encoded)):
         encoded = encoded.replace(r'\%s' % octc, chr(int(octc, 8)))
     return encoded.decode('utf-8')
 
 
-def base10toN(num, n):
+def _base10toN(num, n):
     num_rep = {10: 'a',
                11: 'b',
                12: 'c',

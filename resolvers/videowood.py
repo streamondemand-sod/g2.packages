@@ -25,6 +25,9 @@ from resources.lib.resolvers import ResolverError
 from lib import unpackerjs3
 
 
+__all__ = ['netloc', 'resolve']
+
+
 netloc = ['videowood.tv']
 
 

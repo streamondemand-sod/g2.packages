@@ -26,5 +26,8 @@ site = 'github://J0rdyz65/genesi2.packages/contents/italian-isod'
 
 addons = ['plugin.video.streamondemand']
 """
-    TODO: docstring
+    The :addons: attribute is a list of kodi addons identifier whose libraries have to be included
+    in the sys.path in order for this package to work. For script.module.* addons the sys.path
+    is agumented with the addon ./lib subdirectory while for the other addons the sys.path is
+    augmented with the addon main directory.
 """

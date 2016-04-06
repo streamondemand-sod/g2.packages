@@ -19,7 +19,6 @@
 """
 
 import os
-import pkgutil
 import re
 import sys
 import urllib
@@ -28,6 +27,7 @@ import urlparse
 import xbmc
 import xbmcaddon
 
+from resources.lib.libraries import importer
 from resources.lib.libraries import cleantitle
 from resources.lib.libraries import client
 from resources.lib.libraries import log
@@ -49,7 +49,7 @@ _excluded_channels = [
 if xbmc.getCondVisibility('System.HasAddon(%s)'%sod_addon_id):
     sub_modules = []
     log.notice('italian-isod: sys.path=%s'%sys.path)
-    for package, module, is_pkg in pkgutil.walk_packages([sod_addon_channels_path]):
+    for package, module, is_pkg in importer.walk_packages([sod_addon_channels_path]):
         if is_pkg or module in _excluded_channels: continue
         try:
             m = getattr(__import__(sod_addon_channels_package, globals(), locals(), [module], -1), module)

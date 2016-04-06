@@ -23,22 +23,22 @@ import os
 import sys
 
 import xbmc
-import xbmcaddon
+
+
+__all__ = ['netloc', 'resolve']
 
 
 if xbmc.getCondVisibility('System.HasAddon(script.module.urlresolver)'):
-    # This sys.path modification is required because the addon is NOT included in the addon require section
-    sys.path.append(os.path.join(xbmcaddon.Addon('script.module.urlresolver').getAddonInfo('path'), 'lib'))
+    import urlresolver
 
     try:
-        import urlresolver.plugnplay
-        resolvers = urlresolver.plugnplay.man.implementors(urlresolver.UrlResolver)
-        resolvers = [i for i in resolvers if not '*' in i.domains]
+        _resolvers = urlresolver.plugnplay.man.implementors(urlresolver.UrlResolver)
+        _resolvers = [i for i in _resolvers if not '*' in i.domains]
     except:
-        resolvers = []
+        _resolvers = []
 
     try:
-        netloc = [i.domains for i in resolvers]
+        netloc = [i.domains for i in _resolvers]
         netloc = [i.lower() for i in reduce(lambda x, y: x+y, netloc)]
         netloc = [x for y,x in enumerate(netloc) if x not in netloc[:y]]
     except:
@@ -46,8 +46,6 @@ if xbmc.getCondVisibility('System.HasAddon(script.module.urlresolver)'):
 
 
 def resolve(url):
-    import urlresolver
-
     url = urlresolver.resolve(url)
     if type(url) == bool: url = None
 

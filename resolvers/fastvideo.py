@@ -26,6 +26,9 @@ from resources.lib.resolvers import ResolverError
 from lib import jsunpack
 
 
+__all__ = ['netloc', 'resolve']
+
+
 netloc = ['fastvideo.in', 'fastvideo.me', 'faststream.in', 'rapidvideo.ws']
 
 

@@ -24,6 +24,9 @@ from resources.lib.libraries import client
 from resources.lib.resolvers import ResolverError
 
 
+__all__ = ['netloc', 'resolve']
+
+
 netloc = ['streamin.to']
 
 

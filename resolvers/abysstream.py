@@ -21,6 +21,9 @@
 from resources.lib.libraries import client
 
 
+__all__ = ['netloc', 'resolve']
+
+
 netloc = ['abysstream.com']
 
 

@@ -21,16 +21,18 @@
 import re
 
 from resources.lib.libraries import client
+from resources.lib.resolvers import ResolverError
+
+
+__all__ = ['netloc', 'resolve']
 
 
 netloc = ['backin.net']
 
 
 def resolve(url):
-    match = re.search('http://backin.net/(.+)', url)
-    url = 'http://backin.net/s/generating.php?code=' + match.group(1)
+    r = client.request(url, output='response', error=True)
 
-    result = client.request(url, error=True)
-    url = client.parseDOM(result, 'source', attrs={'type': 'video/mp4'}, ret='src')[0]
+    if 'HTTP Error' in r[0]: return ResolverError(r[0])
 
-    return url
+    return re.search(r'window.pddurl="([^"]+)"', r[1]).group(1)

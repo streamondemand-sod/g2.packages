@@ -25,6 +25,9 @@ from resources.lib.libraries import client
 from lib import jsunpack
 
 
+__all__ = ['netloc', 'resolve']
+
+
 netloc = ['flashx.tv']
 
 
