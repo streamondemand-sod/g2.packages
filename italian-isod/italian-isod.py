@@ -26,7 +26,10 @@ import urlparse
 
 import xbmc
 import xbmcaddon
-import importer
+try:
+    import importer
+except:
+    import pkgutil as importer
 
 from resources.lib.libraries import cleantitle
 from resources.lib.libraries import client
