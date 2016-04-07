@@ -26,8 +26,8 @@ import urlparse
 
 import xbmc
 import xbmcaddon
+import importer
 
-from resources.lib.libraries import importer
 from resources.lib.libraries import cleantitle
 from resources.lib.libraries import client
 from resources.lib.libraries import log
@@ -48,7 +48,6 @@ _excluded_channels = [
 
 if xbmc.getCondVisibility('System.HasAddon(%s)'%sod_addon_id):
     sub_modules = []
-    log.notice('italian-isod: sys.path=%s'%sys.path)
     for package, module, is_pkg in importer.walk_packages([sod_addon_channels_path]):
         if is_pkg or module in _excluded_channels: continue
         try:
@@ -67,13 +66,11 @@ def get_movie(module, dbids, title, year, language='it'):
     try:
         m = getattr(__import__(sod_addon_channels_package, globals(), locals(), [module[2]], -1), module[2])
     except Exception as e:
-        sys.path.pop()
         log.notice('italian-isod.get_movie: %s: %s'%(module[2], e))
         return None
     try:
         items = m.search(Item(), title)
     except Exception as e:
-        sys.path.pop()
         log.notice('italian-isod.get_movie: %s.search(%s, %s, %s): %s'%(module, title, year, language, e))
         return None
 
@@ -95,7 +92,6 @@ def get_sources(module, url):
     try:
         m = getattr(__import__(sod_addon_channels_package, globals(), locals(), [module[2]], -1), module[2])
     except Exception as e:
-        sys.path.pop()
         log.notice('italian-isod.%s: %s'%(module[2], e))
         return []
 
@@ -164,5 +160,4 @@ def get_sources(module, url):
             module[2], sitem.action, host, quality, url, action, sitem.title))
         sources[url] = {'source': host, 'quality': quality, 'info': ' '.join(info_tags), 'url': url}
 
-    sys.path.pop()
     return sources.values()
