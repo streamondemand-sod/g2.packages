@@ -61,6 +61,10 @@ if xbmc.getCondVisibility('System.HasAddon(%s)'%sod_addon_id):
         if hasattr(m, 'search'):
             sub_modules.append(module)
 
+    # TODO: enable/disable logging could be a configurable option
+    from core import logger
+    logger.log_enable(False)
+
 
 def get_movie(module, dbids, title, year, language='it'):
     from servers import servertools
