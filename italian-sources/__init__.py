@@ -18,13 +18,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-site = 'github://J0rdyz65/genesi2.packages/contents/eldorado-urlresolver'
+site = 'github://J0rdyz65/genesi2.packages/contents/italian-sources'
 """
     The :site: attribute is the URL used to fetch the directory content in JSON format from GitHub.
     The 'github://' prefix is a shorthand for 'https://api.github.com/repos/'
 """
 
-addons = ['script.module.urlresolver']
+addons = ['']
 """
     The :addons: attribute is a list of kodi addons identifier whose libraries have to be included
     in the sys.path in order for this package to work. For script.module.* addons the sys.path
