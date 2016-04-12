@@ -31,7 +31,7 @@ __all__ = ['netloc', 'resolve']
 netloc = ['videowood.tv']
 
 
-def resolve(url):
+def resolve(module, url):
     result = client.request(url.replace('/video/', '/embed/'), output='response', error=True)
     
     if 'HTTP Error' in result[0]: return ResolverError(result[0])

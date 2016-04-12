@@ -45,7 +45,7 @@ if xbmc.getCondVisibility('System.HasAddon(script.module.urlresolver)'):
         netloc = []
 
 
-def resolve(url):
+def resolve(module, url):
     url = urlresolver.resolve(url)
     if type(url) == bool: url = None
 

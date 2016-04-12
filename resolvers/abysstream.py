@@ -27,7 +27,7 @@ __all__ = ['netloc', 'resolve']
 netloc = ['abysstream.com']
 
 
-def resolve(url):
+def resolve(module, url):
     url = url.replace('/videos/', '/v/')
 
     cookie = [] # Cookies are returned here...

@@ -32,7 +32,7 @@ __all__ = ['netloc', 'resolve']
 netloc = ['fastvideo.in', 'fastvideo.me', 'faststream.in', 'rapidvideo.ws']
 
 
-def resolve(url):
+def resolve(module, url):
     rurl = url.replace('/embed-', '/')
     rurl = re.compile('//.+?/([\w]+)').findall(rurl)[0]
     rurl = 'http://rapidvideo.ws/embed-%s.html' % rurl

@@ -27,7 +27,7 @@ __all__ = ['netloc', 'resolve']
 netloc = ['akstream.video']
 
 
-def resolve(url):
+def resolve(module, url):
     url = url.replace('/videos/', '/stream/')
     
     cookie = [] # Cookies are returned here...

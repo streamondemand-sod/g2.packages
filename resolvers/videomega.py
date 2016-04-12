@@ -31,7 +31,7 @@ __all__ = ['netloc', 'resolve']
 netloc = ['videomega.tv']
 
 
-def resolve(url):
+def resolve(module, url):
     url = urlparse.urlparse(url).query
     url = urlparse.parse_qsl(url)[0][1]
     url = 'http://videomega.tv/cdn.php?ref=%s' % url

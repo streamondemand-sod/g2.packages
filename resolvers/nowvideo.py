@@ -30,7 +30,7 @@ __all__ = ['netloc', 'resolve']
 netloc = ['nowvideo.eu', 'nowvideo.sx', 'nowvideo.li']
 
 
-def resolve(url):
+def resolve(module, url):
     id = re.compile('//.+?/.+?/([\w]+)').findall(url)
     id += re.compile('//.+?/.+?v=([\w]+)').findall(url)
     id = id[0]

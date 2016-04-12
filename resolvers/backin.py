@@ -30,7 +30,7 @@ __all__ = ['netloc', 'resolve']
 netloc = ['backin.net']
 
 
-def resolve(url):
+def resolve(module, url):
     r = client.request(url, output='response', error=True)
 
     if 'HTTP Error' in r[0]: return ResolverError(r[0])

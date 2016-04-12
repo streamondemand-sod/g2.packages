@@ -31,7 +31,7 @@ __all__ = ['netloc', 'resolve']
 netloc = ['flashx.tv']
 
 
-def resolve(url):
+def resolve(module, url):
     code = re.search(r'flashx.tv/([a-zA-Z0-9]+)', url).group(1)
     url = 'http://www.flashx.pw/fxplaynew-%s.html'%code
     result = client.request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; rv:38.0) Gecko/20100101 Firefox/38.0'})

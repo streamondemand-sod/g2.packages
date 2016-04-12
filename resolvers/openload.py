@@ -29,7 +29,7 @@ __all__ = ['netloc', 'resolve']
 netloc = ['openload.io', 'openload.co']
 
 
-def resolve(url):
+def resolve(module, url):
     result = client.request(url)
     result = client.parseDOM(result, 'video')[0]
     result = client.parseDOM(result, 'script')[0]

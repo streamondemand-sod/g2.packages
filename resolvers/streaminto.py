@@ -30,7 +30,7 @@ __all__ = ['netloc', 'resolve']
 netloc = ['streamin.to']
 
 
-def resolve(url):
+def resolve(module, url):
     if not url.startswith("http://streamin.to/embed-"):
         code = re.search(r'streamin.to/([a-z0-9A-Z]+)', url).group(1)
         url = 'http://streamin.to/embed-%s.html'%code
