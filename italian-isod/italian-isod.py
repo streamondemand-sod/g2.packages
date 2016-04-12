@@ -26,10 +26,7 @@ import urlparse
 
 import xbmc
 import xbmcaddon
-try:
-    import importer
-except:
-    import pkgutil as importer
+import importer
 
 from resources.lib.libraries import cleantitle
 from resources.lib.libraries import client
@@ -50,6 +47,10 @@ _excluded_channels = [
 ]
 
 if xbmc.getCondVisibility('System.HasAddon(%s)'%sod_addon_id):
+    # TODO: enable/disable logging could be a configurable option
+    from core import logger
+    logger.log_enable(False)
+
     sub_modules = []
     for package, module, is_pkg in importer.walk_packages([sod_addon_channels_path]):
         if is_pkg or module in _excluded_channels: continue
@@ -59,11 +60,8 @@ if xbmc.getCondVisibility('System.HasAddon(%s)'%sod_addon_id):
             log.notice('italian-isod: from %s import %s: %s'%(sod_addon_channels_package, module, e))
             continue
         if hasattr(m, 'search'):
+            log.debug('italian-isod: submodule %s added'%module)
             sub_modules.append(module)
-
-    # TODO: enable/disable logging could be a configurable option
-    from core import logger
-    logger.log_enable(False)
 
 
 def get_movie(module, dbids, title, year, language='it'):
