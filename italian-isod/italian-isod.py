@@ -46,8 +46,8 @@ _excluded_channels = [
     'corsaronero',      # torrent only
 ]
 
-if xbmc.getCondVisibility('System.HasAddon(%s)'%sod_addon_id):
-    # TODO: enable/disable logging could be a configurable option
+
+def _sub_modules():
     from core import logger
     logger.log_enable(False)
 
@@ -62,6 +62,10 @@ if xbmc.getCondVisibility('System.HasAddon(%s)'%sod_addon_id):
         if hasattr(m, 'search'):
             log.debug('italian-isod: submodule %s added'%module)
             sub_modules.append(module)
+    return sub_modules
+
+
+sub_modules = _sub_modules() if xbmc.getCondVisibility('System.HasAddon(%s)'%sod_addon_id) else []
 
 
 def get_movie(module, dbids, title, year, language='it'):

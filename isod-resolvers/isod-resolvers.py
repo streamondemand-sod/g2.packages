@@ -46,8 +46,7 @@ _excluded_servers = [
 ]
 
 
-if xbmc.getCondVisibility('System.HasAddon(%s)'%_sod_addon_id):
-    # TODO: enable/disable logging could be a configurable option
+def _netloc():
     from core import logger
     logger.log_enable(False)
 
@@ -61,20 +60,19 @@ if xbmc.getCondVisibility('System.HasAddon(%s)'%_sod_addon_id):
             continue
         if not hasattr(m, 'get_video_url'): continue
 
+        source = package.find_module(module).get_source()
+        url_patterns = []
         #
         # The regular expressions matching the handled urls are found in the following statements:
         #   patronvideos = 'http://abysstream.com/videos/([A-Za-z0-9]+)'
         #
-        source = package.find_module(module).get_source()
-        url_patterns = []
-        for delim in ["'", '"', "'''", '"""']:
-            for match in re.finditer(r'patronvideos\s*=\s*r?%s([^%s]+)%s'%(delim, delim[0], delim), source):
-                try:
-                    pat = match.group(1)
-                    if re.compile(pat):
-                        url_patterns.append(pat)
-                except Exception as e:
-                    log.notice('isod-resolvers: %s: invalid pattern: %s'%(pat, e))
+        for match in re.finditer(r'patronvideos\s*=\s*u?r?("""|\'\'\'|"|\')((?:\\\1|.)*?)\1', source):
+            pat = match.group(2)
+            try:
+                if re.compile(pat):
+                    url_patterns.append(pat)
+            except Exception as e:
+                log.notice('isod-resolvers: %s: invalid pattern: %s'%(pat, e))
 
         if not url_patterns:
             log.debug('isod-resolvers: %s: no url pattern found'%module)
@@ -84,8 +82,13 @@ if xbmc.getCondVisibility('System.HasAddon(%s)'%_sod_addon_id):
                 'sub_module': module,
                 'url_patterns': url_patterns,
             })
+    return netloc
+
+
+netloc = _netloc() if xbmc.getCondVisibility('System.HasAddon(%s)'%_sod_addon_id) else []
 
 
 def resolve(module, url):
     urls = getattr(__import__(_sod_addon_servers_package, globals(), locals(), [module[2]], -1), module[2]).get_video_url(url)
+
     return None if not urls else urls[0][1]

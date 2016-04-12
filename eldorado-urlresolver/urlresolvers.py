@@ -18,7 +18,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-
 import os
 import sys
 
@@ -28,24 +27,33 @@ import xbmc
 __all__ = ['netloc', 'resolve']
 
 
-if xbmc.getCondVisibility('System.HasAddon(script.module.urlresolver)'):
+def _netloc():
     import urlresolver
 
     try:
         _resolvers = urlresolver.plugnplay.man.implementors(urlresolver.UrlResolver)
-        _resolvers = [i for i in _resolvers if not '*' in i.domains]
-    except:
+    except Exception:
         _resolvers = []
 
-    try:
-        netloc = [i.domains for i in _resolvers]
-        netloc = [i.lower() for i in reduce(lambda x, y: x+y, netloc)]
-        netloc = [x for y,x in enumerate(netloc) if x not in netloc[:y]]
-    except:
-        netloc = []
+    netloc = []
+    for r in _resolvers:
+        try:
+            module = r.fname if isinstance(r, urlresolver.plugnplay.interfaces.UrlWrapper) else re.search(r'<([^\.]+)\.', str(r)).group(1)
+            netloc.append({
+                'sub_module': module,
+                'domains': r.domains,
+            })
+        except Exception:
+            pass
+    return netloc
+
+
+netloc = _netloc() if xbmc.getCondVisibility('System.HasAddon(script.module.urlresolver)') else []
 
 
 def resolve(module, url):
+    import urlresolver
+
     url = urlresolver.resolve(url)
     if type(url) == bool: url = None
 
