@@ -24,7 +24,6 @@ import sys
 import urllib
 import urlparse
 
-import xbmc
 import xbmcaddon
 import importer
 
@@ -34,12 +33,12 @@ from resources.lib.libraries import log
 
 from resources.lib import resolvers
 
+
 __all__ = ['netloc', 'resolve']
 
 
-_sod_addon_id = 'plugin.video.streamondemand'
 _sod_addon_servers_package = 'servers'
-_sod_addon_servers_path = os.path.join(xbmcaddon.Addon(_sod_addon_id).getAddonInfo('path'), _sod_addon_servers_package)
+_sod_addon_servers_path = os.path.join(xbmcaddon.Addon('plugin.video.streamondemand').getAddonInfo('path'), _sod_addon_servers_package)
 _excluded_servers = [
     'servertools',      # Not a server
     'longurl',          # Looks like a short url resolver
@@ -85,7 +84,7 @@ def _netloc():
     return netloc
 
 
-netloc = _netloc() if xbmc.getCondVisibility('System.HasAddon(%s)'%_sod_addon_id) else []
+netloc = _netloc()
 
 
 def resolve(module, url):

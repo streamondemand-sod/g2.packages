@@ -18,11 +18,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import os
-import sys
-
-import xbmc
-
 
 __all__ = ['netloc', 'resolve']
 
@@ -48,7 +43,7 @@ def _netloc():
     return netloc
 
 
-netloc = _netloc() if xbmc.getCondVisibility('System.HasAddon(script.module.urlresolver)') else []
+netloc = _netloc()
 
 
 def resolve(module, url):

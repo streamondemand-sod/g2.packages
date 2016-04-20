@@ -24,7 +24,6 @@ import sys
 import urllib
 import urlparse
 
-import xbmc
 import xbmcaddon
 import importer
 
@@ -36,9 +35,8 @@ from resources.lib.libraries import log
 __all__ = ['sub_modules', 'get_movie', 'get_sources']
 
 
-sod_addon_id = 'plugin.video.streamondemand'
-sod_addon_channels_package = 'channels'
-sod_addon_channels_path = os.path.join(xbmcaddon.Addon(sod_addon_id).getAddonInfo('path'), sod_addon_channels_package)
+_sod_addon_channels_package = 'channels'
+_sod_addon_channels_path = os.path.join(xbmcaddon.Addon('plugin.video.streamondemand').getAddonInfo('path'), _sod_addon_channels_package)
 
 _excluded_channels = [
     'biblioteca',       # global search channel
@@ -52,12 +50,12 @@ def _sub_modules():
     logger.log_enable(False)
 
     sub_modules = []
-    for package, module, is_pkg in importer.walk_packages([sod_addon_channels_path]):
+    for package, module, is_pkg in importer.walk_packages([_sod_addon_channels_path]):
         if is_pkg or module in _excluded_channels: continue
         try:
-            m = getattr(__import__(sod_addon_channels_package, globals(), locals(), [module], -1), module)
+            m = getattr(__import__(_sod_addon_channels_package, globals(), locals(), [module], -1), module)
         except Exception as e:
-            log.notice('italian-isod: from %s import %s: %s'%(sod_addon_channels_package, module, e))
+            log.notice('italian-isod: from %s import %s: %s'%(_sod_addon_channels_package, module, e))
             continue
         if hasattr(m, 'search'):
             log.debug('italian-isod: submodule %s added'%module)
@@ -65,7 +63,7 @@ def _sub_modules():
     return sub_modules
 
 
-sub_modules = _sub_modules() if xbmc.getCondVisibility('System.HasAddon(%s)'%sod_addon_id) else []
+sub_modules = _sub_modules()
 
 
 def get_movie(module, dbids, title, year, language='it'):
@@ -73,7 +71,7 @@ def get_movie(module, dbids, title, year, language='it'):
     from core.item import Item
 
     try:
-        m = getattr(__import__(sod_addon_channels_package, globals(), locals(), [module[2]], -1), module[2])
+        m = getattr(__import__(_sod_addon_channels_package, globals(), locals(), [module[2]], -1), module[2])
     except Exception as e:
         log.notice('italian-isod.get_movie: %s: %s'%(module[2], e))
         return None
@@ -99,7 +97,7 @@ def get_sources(module, url):
     from core.item import Item
 
     try:
-        m = getattr(__import__(sod_addon_channels_package, globals(), locals(), [module[2]], -1), module[2])
+        m = getattr(__import__(_sod_addon_channels_package, globals(), locals(), [module[2]], -1), module[2])
     except Exception as e:
         log.notice('italian-isod.%s: %s'%(module[2], e))
         return []
