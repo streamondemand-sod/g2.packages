@@ -24,10 +24,11 @@ site = 'github://J0rdyz65/genesi2.packages/contents/italian-sources'
     The 'github://' prefix is a shorthand for 'https://api.github.com/repos/'
 """
 
-addons = ['']
+addons = None
 """
     The :addons: attribute is a list of kodi addons identifier whose libraries have to be included
     in the sys.path in order for this package to work. For script.module.* addons the sys.path
     is agumented with the addon ./lib subdirectory while for the other addons the sys.path is
     augmented with the addon main directory.
+    If None or absent, it is assumed that this package doesn't require other addons to be installed.
 """
