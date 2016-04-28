@@ -19,7 +19,7 @@
 """
 
 
-from resources.lib.actions import addDirectoryItem, endDirectory
+from resources.lib.libraries import uis
 from resources.lib.language import _
 
 
