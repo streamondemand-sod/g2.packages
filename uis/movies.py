@@ -23,21 +23,13 @@ from resources.lib.actions import addDirectoryItem, endDirectory
 from resources.lib.language import _
 
 
-actions = ['movies']
+actions = ['menu']
 
 
-def movies(**kwargs):
-    """Replacement of the main.movies navigation"""
-    addDirectoryItem(_('Search by Title'), 'movieSearch', 'movieSearch.jpg', 'DefaultMovies.png')
-    addDirectoryItem(30034, 'moviePerson', 'moviePerson.jpg', 'DefaultMovies.png')
-    addDirectoryItem(30021, 'movieGenres', 'movieGenres.jpg', 'DefaultMovies.png')
-    addDirectoryItem(30022, 'movieYears', 'movieYears.jpg', 'DefaultMovies.png')
-    addDirectoryItem(30025, 'movies&url=featured', 'movies.jpg', 'DefaultRecentlyAddedMovies.png')
-    addDirectoryItem(30026, 'movies&url=trending', 'moviesTrending.jpg', 'DefaultRecentlyAddedMovies.png')
-    addDirectoryItem(30027, 'movies&url=popular', 'moviesPopular.jpg', 'DefaultMovies.png')
-    addDirectoryItem(30028, 'movies&url=views', 'moviesViews.jpg', 'DefaultMovies.png')
-    addDirectoryItem(30029, 'movies&url=boxoffice', 'moviesBoxoffice.jpg', 'DefaultMovies.png')
-    addDirectoryItem(30030, 'movies&url=oscars', 'moviesOscars.jpg', 'DefaultMovies.png')
-    addDirectoryItem(30031, 'movies&url=theaters', 'moviesTheaters.jpg', 'DefaultRecentlyAddedMovies.png')
-    addDirectoryItem(30032, 'movies&url=added', 'moviesAdded.jpg', 'DefaultRecentlyAddedMovies.png')
-    endDirectory()
+def menu(**kwargs):
+    """Replacement of the default movies.menu"""
+    uis.addDirectoryItem(_('Search by Title'), 'movies.search', 'movieSearch.jpg', 'DefaultMovies.png')
+    uis.addDirectoryItem(_('Search by Person'), 'movies.person', 'moviePerson.jpg', 'DefaultMovies.png')
+    uis.addDirectoryItem(_('Search by Year'), 'movies.year', 'movieYears.jpg', 'DefaultMovies.png')
+    uis.addDirectoryItem(_('Genres'), 'movies.genres', 'movieGenres.jpg', 'DefaultMovies.png')
+    uis.endDirectory()
