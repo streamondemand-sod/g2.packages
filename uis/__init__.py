@@ -18,10 +18,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-site = 'github://J0rdyz65/genesi2.packages/contents/actions'
+site = 'github://J0rdyz65/genesi2.packages/uis'
 """
-    The :site: attribute is the URL used to fetch the directory content in JSON format from GitHub.
-    The 'github://' prefix is a shorthand for 'https://api.github.com/repos/'
+    The :site: attribute is the pseudo-URL used to fetch the directory content in JSON format from GitHub.
 """
 
 addons = None
