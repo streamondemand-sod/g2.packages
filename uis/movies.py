@@ -19,17 +19,44 @@
 """
 
 
+from resources.lib import dbs
+
+from resources.lib.libraries import cache
 from resources.lib.libraries import uis
 from resources.lib.language import _
 
+from resources.lib.uis import movies
 
-actions = ['menu']
+
+__all__ = ['menu', 'search', 'movielist']
 
 
 def menu(**kwargs):
-    """Replacement of the default movies.menu"""
-    uis.addDirectoryItem(_('Search by Title'), 'movies.search', 'movieSearch.jpg', 'DefaultMovies.png')
-    uis.addDirectoryItem(_('Search by Person'), 'movies.person', 'moviePerson.jpg', 'DefaultMovies.png')
-    uis.addDirectoryItem(_('Search by Year'), 'movies.year', 'movieYears.jpg', 'DefaultMovies.png')
-    uis.addDirectoryItem(_('Genres'), 'movies.genres', 'movieGenres.jpg', 'DefaultMovies.png')
+    """Sample replacement of the default movies.menu"""
+    if dbs.url('movies{title}', title=''):
+        uis.addDirectoryItem(_('Search by Title'), 'movies.search', 'movieSearch.jpg', 'DefaultMovies.png')
+    if dbs.url('person{name}', name=''):
+        uis.addDirectoryItem(_('Search by Person'), 'movies.person', 'moviePerson.jpg', 'DefaultMovies.png')
+    if dbs.url('movies{year}', year=''):
+        uis.addDirectoryItem(_('Search by Year'), 'movies.year', 'movieYears.jpg', 'DefaultMovies.png')
+    if dbs.url('movies{genre_id}', genre_id=''):
+        uis.addDirectoryItem(_('Genres'), 'movies.genres', 'movieGenres.jpg', 'DefaultMovies.png')
     uis.endDirectory()
+
+
+def search(action, **kwargs):
+    """Sample replacement of the default movies.search"""
+    query = uis.doQuery(_('Title'))
+    if query is not None:
+        url = dbs.url('movies{title}', title=query)
+        movielist(action, url)
+
+
+def movielist(action, url, **kwargs):
+    """Sample replacement of the default movies.movielist"""
+    items = cache.get(dbs.movies, 24, url)
+    # TODO: signal empty directory (if not items:...)
+    for i in items: i['next_action'] = 'movies.movielist'
+
+    # TODO: this should become a uis primitive
+    movies._add_movie_directory(action, items)
