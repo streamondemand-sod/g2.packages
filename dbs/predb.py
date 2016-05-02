@@ -24,6 +24,9 @@ import json
 import urllib
 import urlparse
 
+from resources.lib import platform
+from resources.lib import language
+
 from resources.lib.libraries import client
 from resources.lib.libraries import workers
 from resources.lib.libraries import log
@@ -37,9 +40,10 @@ __all__ = ['url', 'movies']
 netloc = ['predb.me']
 priority = 9
 
+_info_lang = platform.setting('infoLang') or 'en'
+
 _urls = {
-    # TODO: translate the 2 letter code in _info_lang to the full language name
-    'movies_recently_added{}': 'http://predb.me/?search=-MD&cats=movies&language=%s&page=1' % 'Italian'
+    'movies_recently_added{}': 'http://predb.me/?search=-MD&cats=movies&language=%s&page=1' % language.name(_info_lang)
 }
 
 
