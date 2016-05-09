@@ -66,7 +66,7 @@ def _sub_modules():
 sub_modules = _sub_modules()
 
 
-def get_movie(module, dbids, title, year, language='it'):
+def get_movie(module, title, year, language='it', **kwargs):
     from servers import servertools
     from core.item import Item
 
