@@ -55,10 +55,10 @@ def _info():
         try:
             m = getattr(__import__(_sod_addon_channels_package, globals(), locals(), [module], -1), module)
         except Exception as e:
-            log.notice('italian-isod: from %s import %s: %s'%(_sod_addon_channels_package, module, e))
+            log.notice('isod-sources: from %s import %s: %s'%(_sod_addon_channels_package, module, e))
             continue
         if hasattr(m, 'search'):
-            log.debug('italian-isod: submodule %s added'%module)
+            log.debug('isod-sources: submodule %s added'%module)
             info.append({'name': module})
 
     return info
@@ -74,23 +74,37 @@ def get_movie(module, title, year, language='it', **kwargs):
     try:
         m = getattr(__import__(_sod_addon_channels_package, globals(), locals(), [module[2]], -1), module[2])
     except Exception as e:
-        log.notice('italian-isod.get_movie: %s: %s'%(module[2], e))
-        return None
-    try:
-        items = m.search(Item(), title)
-    except Exception as e:
-        log.notice('italian-isod.get_movie: %s.search(%s, %s, %s): %s'%(module, title, year, language, e))
+        log.notice('isod-sources.%s.get_movie(...): %s'%(module[2], e))
         return None
 
-    cleartitle = cleantitle.movie(title)
+    try:
+        title_search = normalize_unicode(title, encoding='ascii')
+        title_search = urllib.quote_plus(title_search)
+        items = m.search(Item(), title_search)
+        if not items: return None
+    except Exception as e:
+        log.notice('isod-sources.%s.get_movie(%s, %s, %s): %s'%(module[2], title, year, language, e))
+        return None
+
     # TODO: [(year)] filtering if returned in the title
     # TODO: [(sub-ita)] filtering if returned in the title
-    items = [item for item in items if cleartitle == cleantitle.movie(item.fulltitle)]
+    from lib.fuzzywuzzy import fuzz
 
-    if len(items) > 1:
-        log.notice('italian-isod.get_movie: %s.search(%s, %s, %s): %d matches'%(module, title, year, language, len(items)))
+    def cleanup(title):
+        # Clean up a bit the returned title to improve the fuzzy matching
+        title = re.sub(r'\(.*\)', '', title)  # Anything within ()
+        title = re.sub(r'\[.*\]', '', title)  # Anything within []
+        return title
 
-    return None if items == [] else '%s@%s'%(items[0].action, items[0].url)
+    item = sorted(items, key=lambda i: fuzz.token_sort_ratio(cleanup(i.fulltitle), title), reverse=True)[0]
+
+    quality = 'HD' if re.search(r'[^\w]HD[^\w]', item.fulltitle) else ''
+
+    log.notice('isod-sources.%s.get_movie(...): %d matches, best fuzzy score=%d, quality=%s, title=%s'%
+               (module[2], len(items), fuzz.token_sort_ratio(cleanup(item.fulltitle), title), quality, item.fulltitle))
+
+    # TODO[user]: use fuzziness parameter (user setting) instead of 84, also enable the user to change it on the fly via ctx menu
+    return None if fuzz.token_sort_ratio(cleanup(item.fulltitle), title) < 84 else '%s|%s|%s'%(item.action, item.url, quality)
 
 
 def get_sources(module, url):
@@ -100,10 +114,10 @@ def get_sources(module, url):
     try:
         m = getattr(__import__(_sod_addon_channels_package, globals(), locals(), [module[2]], -1), module[2])
     except Exception as e:
-        log.notice('italian-isod.%s: %s'%(module[2], e))
+        log.notice('isod-sources.%s: %s'%(module[2], e))
         return []
 
-    action, url = url.split('@', 1)
+    action, url, url_quality = url.split('|')
     item = Item(action=action, url=url)
 
     try:
@@ -118,17 +132,17 @@ def get_sources(module, url):
         sitems = []
 
     if sitems == []:
-        log.debug('italian-isod.get_sources: %s.%s: no sources for url=%s'%(module[2], item.action, item.url))
+        log.debug('isod-sources.get_sources: %s.%s: no sources for url=%s'%(module[2], item.action, item.url))
 
     sources = {}
     for sitem in sitems:
         if sitem.action != 'play':
-            log.debug('italian-isod.get_sources: %s.%s: play action not specified for url=%s'%(module[2], item.action, sitem.url))
+            log.debug('isod-sources.get_sources: %s.%s: play action not specified for url=%s'%(module[2], item.action, sitem.url))
             continue
 
         t = sitem.title
         # Extract the stream quality if provided in the title
-        quality = 'HD' if re.search(r'[^\w]HD[^\w]', t) else 'SD'
+        quality = 'HD' if re.search(r'[^\w]HD[^\w]', t) else url_quality if url_quality else 'SD'
         # Remove known tags and year
         t = re.sub(r'\[HD\]', '', t)
         t = re.sub(r'\(\d{4}\)', '', t)
@@ -160,13 +174,19 @@ def get_sources(module, url):
             except:
                 pitems = []
             if len(pitems) == 0:
-                log.debug('italian-isod.get_sources: %s.%s: no sources for url=%s'%(module[2], sitem.action, sitem.url))
+                log.debug('isod-sources.get_sources: %s.%s: no sources for url=%s'%(module[2], sitem.action, sitem.url))
                 continue
             url = pitems[0].url
             action = pitems[0].action
 
-        log.debug('italian-isod.get_sources: %s.%s: host=%s, quality=%s, url=%s, action=%s, title=%s'%(
+        log.debug('isod-sources.get_sources: %s.%s: host=%s, quality=%s, url=%s, action=%s, title=%s'%(
             module[2], sitem.action, host, quality, url, action, sitem.title))
         sources[url] = {'source': host, 'quality': quality, 'info': ' '.join(info_tags), 'url': url}
 
     return sources.values()
+
+
+def normalize_unicode(string, encoding='utf-8'):
+    from unicodedata import normalize
+    if string is None: string = ''
+    return normalize('NFKD', string if isinstance(string, unicode) else unicode(string, encoding, 'ignore')).encode(encoding, 'ignore')
