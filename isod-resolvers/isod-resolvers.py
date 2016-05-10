@@ -34,7 +34,7 @@ from resources.lib.libraries import log
 from resources.lib import resolvers
 
 
-__all__ = ['netloc', 'resolve']
+__all__ = ['info', 'resolve']
 
 
 _sod_addon_servers_package = 'servers'
@@ -45,11 +45,11 @@ _excluded_servers = [
 ]
 
 
-def _netloc():
+def _info():
     from core import logger
     logger.log_enable(False)
 
-    netloc = []
+    info = []
     for package, module, is_pkg in importer.walk_packages([_sod_addon_servers_path]):
         if is_pkg or module in _excluded_servers: continue
         try:
@@ -62,7 +62,7 @@ def _netloc():
         source = package.find_module(module).get_source()
         url_patterns = []
         #
-        # The regular expressions matching the handled urls are found in the following statements:
+        # The regular expressions matching the handled urls are found in statements like the following:
         #   patronvideos = 'http://abysstream.com/videos/([A-Za-z0-9]+)'
         #
         for match in re.finditer(r'patronvideos\s*=\s*u?r?("""|\'\'\'|"|\')((?:\\\1|.)*?)\1', source):
@@ -77,14 +77,14 @@ def _netloc():
             log.debug('isod-resolvers: %s: no url pattern found'%module)
         else:
             log.debug('isod-resolvers: %s: url patterns: %s'%(module, ' | '.join(url_patterns)))
-            netloc.append({
-                'sub_module': module,
+            info.append({
+                'name': module,
                 'url_patterns': url_patterns,
             })
-    return netloc
+    return info
 
 
-netloc = _netloc()
+info = _info()
 
 
 def resolve(module, url):

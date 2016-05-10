@@ -19,10 +19,10 @@
 """
 
 
-__all__ = ['netloc', 'resolve']
+__all__ = ['info', 'resolve']
 
 
-def _netloc():
+def _info():
     import urlresolver
 
     try:
@@ -30,20 +30,20 @@ def _netloc():
     except Exception:
         _resolvers = []
 
-    netloc = []
+    info = []
     for r in _resolvers:
         try:
             module = r.fname if isinstance(r, urlresolver.plugnplay.interfaces.UrlWrapper) else re.search(r'<([^\.]+)\.', str(r)).group(1)
-            netloc.append({
-                'sub_module': module,
+            info.append({
+                'name': module,
                 'domains': r.domains,
             })
         except Exception:
             pass
-    return netloc
+    return info
 
 
-netloc = _netloc()
+info = _info()
 
 
 def resolve(module, url):

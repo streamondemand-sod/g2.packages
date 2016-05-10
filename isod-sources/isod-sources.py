@@ -32,7 +32,7 @@ from resources.lib.libraries import client
 from resources.lib.libraries import log
 
 
-__all__ = ['sub_modules', 'get_movie', 'get_sources']
+__all__ = ['info', 'get_movie', 'get_sources']
 
 
 _sod_addon_channels_package = 'channels'
@@ -45,11 +45,11 @@ _excluded_channels = [
 ]
 
 
-def _sub_modules():
+def _info():
     from core import logger
     logger.log_enable(False)
 
-    sub_modules = []
+    info = []
     for package, module, is_pkg in importer.walk_packages([_sod_addon_channels_path]):
         if is_pkg or module in _excluded_channels: continue
         try:
@@ -59,11 +59,12 @@ def _sub_modules():
             continue
         if hasattr(m, 'search'):
             log.debug('italian-isod: submodule %s added'%module)
-            sub_modules.append(module)
-    return sub_modules
+            info.append({'name': module})
+
+    return info
 
 
-sub_modules = _sub_modules()
+info = _info()
 
 
 def get_movie(module, title, year, language='it', **kwargs):
@@ -146,6 +147,7 @@ def get_sources(module, url):
                 host = re.search(r'\[([^\]]+)\]', t).group(1)
             except:
                 host = ''
+        host = host.split(' ')[-1].translate(None, '@')
 
         if not hasattr(m, sitem.action):
             # No channel specific resolver

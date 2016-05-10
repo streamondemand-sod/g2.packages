@@ -28,7 +28,9 @@ from resources.lib.language import _
 from resources.lib.uis import movies
 
 
-__all__ = ['menu', 'search', 'movielist']
+info = {
+    'methods': ['menu', 'search', 'movielist'],
+}
 
 
 def menu(**kwargs):

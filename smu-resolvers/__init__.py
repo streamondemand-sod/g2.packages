@@ -18,7 +18,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-site = 'github://J0rdyz65/genesi2.packages/urlresolvers'
+site = 'github://J0rdyz65/genesi2.packages/smu-resolvers'
 """
     The :site: attribute is the pseudo-URL used to fetch the directory content in JSON format from GitHub.
 """

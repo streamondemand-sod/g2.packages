@@ -34,11 +34,12 @@ from resources.lib.libraries import log
 from resources.lib.dbs import tmdb
 
 
-__all__ = ['url', 'movies']
+info = {
+    'priority': 9,
+    'domains': ['predb.me'],
+    'methods': ['url', 'movies'],
+}
 
-
-netloc = ['predb.me']
-priority = 9
 
 _info_lang = platform.setting('infoLang') or 'en'
 
