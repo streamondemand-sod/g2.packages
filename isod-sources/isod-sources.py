@@ -24,7 +24,6 @@ import sys
 import urllib
 import urlparse
 
-import xbmcaddon
 import importer
 
 from resources.lib.libraries import cleantitle
@@ -32,49 +31,51 @@ from resources.lib.libraries import client
 from resources.lib.libraries import log
 
 
-__all__ = ['info', 'get_movie', 'get_sources']
-
-
 _sod_addon_channels_package = 'channels'
-_sod_addon_channels_path = os.path.join(xbmcaddon.Addon('plugin.video.streamondemand').getAddonInfo('path'), _sod_addon_channels_package)
 
 _excluded_channels = [
     'biblioteca',       # global search channel
     'buscador',         # global search channel
     'corsaronero',      # torrent only
+    'tengourl',         # not a title search channel
 ]
 
+_channels_options = {
+    'cineblog01': {'source_quality_override': True, 'ignore_tags': ['Streaming HD:', 'Streaming:']},
+}
 
-def _info():
+
+def _channel_option(channel, option, default=None):
+    return _channels_options.get(channel, {}).get(option, default)
+
+
+def info(paths):
     from core import logger
     logger.log_enable(False)
 
     info = []
-    for package, module, is_pkg in importer.walk_packages([_sod_addon_channels_path]):
-        if is_pkg or module in _excluded_channels: continue
+    for package, channel, is_pkg in importer.walk_packages([os.path.join(paths[0], _sod_addon_channels_package)]):
+        if is_pkg or channel in _excluded_channels: continue
         try:
-            m = getattr(__import__(_sod_addon_channels_package, globals(), locals(), [module], -1), module)
+            m = getattr(__import__(_sod_addon_channels_package, globals(), locals(), [channel], -1), channel)
         except Exception as e:
-            log.notice('isod-sources: from %s import %s: %s'%(_sod_addon_channels_package, module, e))
+            log.notice('isod-sources: from %s import %s: %s'%(_sod_addon_channels_package, channel, e))
             continue
         if hasattr(m, 'search'):
-            log.debug('isod-sources: submodule %s added'%module)
-            info.append({'name': module})
+            log.debug('isod-sources: channel %s added'%channel)
+            info.append({'name': channel})
 
     return info
 
 
-info = _info()
-
-
-def get_movie(module, title, year, language='it', **kwargs):
+def get_movie(provider, title, year=None, language='it', **kwargs):
     from servers import servertools
     from core.item import Item
 
     try:
-        m = getattr(__import__(_sod_addon_channels_package, globals(), locals(), [module[2]], -1), module[2])
+        m = getattr(__import__(_sod_addon_channels_package, globals(), locals(), [provider[2]], -1), provider[2])
     except Exception as e:
-        log.notice('isod-sources.%s.get_movie(...): %s'%(module[2], e))
+        log.notice('isod-sources.get_movie(%s, ...): %s'%(provider[2], e))
         return None
 
     try:
@@ -83,44 +84,31 @@ def get_movie(module, title, year, language='it', **kwargs):
         items = m.search(Item(), title_search)
         if not items: return None
     except Exception as e:
-        log.notice('isod-sources.%s.get_movie(%s, %s, %s): %s'%(module[2], title, year, language, e))
+        log.notice('isod-sources.get_movie(%s, %s, ...): %s'%(provider[2], title, e))
         return None
 
-    # TODO: [(year)] filtering if returned in the title
-    # TODO: [(sub-ita)] filtering if returned in the title
-    from lib.fuzzywuzzy import fuzz
+    # TODO: [(year)] filtering if returned in the title and year is provided
+    # TODO: [(sub-ita)] filtering if returned in the title and language is provided
 
-    def cleanup(title):
-        # Clean up a bit the returned title to improve the fuzzy matching
+    def cleantitle(title):
         title = re.sub(r'\(.*\)', '', title)  # Anything within ()
         title = re.sub(r'\[.*\]', '', title)  # Anything within []
         return title
 
-    item = sorted(items, key=lambda i: fuzz.token_sort_ratio(cleanup(i.fulltitle), title), reverse=True)[0]
-
-    quality = 'HD' if re.search(r'[^\w]HD[^\w]', item.fulltitle) else ''
-
-    log.notice('isod-sources.%s.get_movie(...): %d matches, best fuzzy score=%d, quality=%s, title=%s'%
-               (module[2], len(items), fuzz.token_sort_ratio(cleanup(item.fulltitle), title), quality, item.fulltitle))
-
-    # TODO[user]: use fuzziness parameter (user setting) instead of 84, also enable the user to change it on the fly via ctx menu
-    return None if fuzz.token_sort_ratio(cleanup(item.fulltitle), title) < 84 else '%s|%s|%s'%(item.action, item.url, quality)
+    # NOTE: list of tuples: (url, matched_title[, additional_infos...])
+    return [(i.url, cleantitle(i.fulltitle), i.action, 'HD' if re.search(r'[^\w]HD[^\w]', i.fulltitle) else 'SD') for i in items]
 
 
-def get_sources(module, url):
+def get_sources(provider, vref):
     from servers import servertools
     from core.item import Item
 
     try:
-        m = getattr(__import__(_sod_addon_channels_package, globals(), locals(), [module[2]], -1), module[2])
-    except Exception as e:
-        log.notice('isod-sources.%s: %s'%(module[2], e))
-        return []
+        m = getattr(__import__(_sod_addon_channels_package, globals(), locals(), [provider[2]], -1), provider[2])
 
-    action, url, url_quality = url.split('|')
-    item = Item(action=action, url=url)
+        url, title, action, ref_quality = vref
+        item = Item(action=action, url=url)
 
-    try:
         if hasattr(m, item.action):
             # Channel specific function to retrieve the sources
             sitems = getattr(m, item.action)(item)
@@ -128,29 +116,38 @@ def get_sources(module, url):
             # Generic function to retrieve the sources
             item.action = 'servertools.find_video_items'
             sitems = servertools.find_video_items(item)
-    except:
-        sitems = []
+    except Exception as e:
+        log.notice('isod-sources.get_sources(%s, ...): %s'%(provider[2], e))
+        return []
 
-    if sitems == []:
-        log.debug('isod-sources.get_sources: %s.%s: no sources for url=%s'%(module[2], item.action, item.url))
+    if not sitems:
+        log.debug('isod-sources.get_sources(%s, ...): no sources found by %s(%s)'%(provider[2], item.action, item.url))
 
     sources = {}
     for sitem in sitems:
         if sitem.action != 'play':
-            log.debug('isod-sources.get_sources: %s.%s: play action not specified for url=%s'%(module[2], item.action, sitem.url))
+            log.debug('isod-sources.get_sources(%s, ...): play action not specified for source %s'%(provider[2], sitem.__dict__))
             continue
 
-        t = sitem.title
-        # Extract the stream quality if provided in the title
-        quality = 'HD' if re.search(r'[^\w]HD[^\w]', t) else url_quality if url_quality else 'SD'
+        log.debug('isod-sources.get_sources(%s, ...): processing source %s'%(provider[2], sitem.__dict__))
+
+        t = sitem.title        
+
+        # Extract the stream quality if provided in the title, otherwise fallback to the quality
+        # found in the sources page title but not if 'source_quality_override' is a channel option (e.g. cineblog01)
+        quality = 'HD' if re.search(r'[^\w]HD[^\w]', t) else 'SD' if _channel_option(provider[2], 'source_quality_override') else ref_quality
+
         # Remove known tags and year
         t = re.sub(r'\[HD\]', '', t)
         t = re.sub(r'\(\d{4}\)', '', t)
         # Remove the [COLOR ...]<info>[/COLOR] tags and collect the <info>
-        info_tags = [module[2]]
+        info_tags = []
         def collect_color_tags(match):
-            info_tags.append(match.group(1))
+            tag = match.group(1)
+            if tag not in _channel_option(provider[2], 'ignore_tags', []):
+                info_tags.append(tag)
             return ''
+
         t = re.sub(r'\[COLOR\s+[^\]]+\]([^\[]*)\[/COLOR\]', collect_color_tags, t)
         t = re.sub(r'\[/?COLOR[^\]]*\]', '', t)
         # Extract the host if possible
@@ -173,15 +170,15 @@ def get_sources(module, url):
                 pitems = getattr(m, sitem.action)(sitem)
             except:
                 pitems = []
-            if len(pitems) == 0:
-                log.debug('isod-sources.get_sources: %s.%s: no sources for url=%s'%(module[2], sitem.action, sitem.url))
+            if not len(pitems):
+                log.debug('isod-sources.get_sources(%s, ...): url cannot be resolved for source %s'%(provider[2], sitem.__dict__))
                 continue
             url = pitems[0].url
             action = pitems[0].action
 
-        log.debug('isod-sources.get_sources: %s.%s: host=%s, quality=%s, url=%s, action=%s, title=%s'%(
-            module[2], sitem.action, host, quality, url, action, sitem.title))
-        sources[url] = {'source': host, 'quality': quality, 'info': ' '.join(info_tags), 'url': url}
+        sources[url] = {'source': host, 'quality': quality, 'info': ('[%s] '%' '.join(info_tags) if info_tags else '')+title, 'url': url}
+
+        log.debug('isod-sources.get_sources(%s, ...): %s'%(provider[2], sources[url]))
 
     return sources.values()
 
