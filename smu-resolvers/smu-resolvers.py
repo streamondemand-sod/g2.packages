@@ -19,9 +19,6 @@
 """
 
 
-__all__ = ['info', 'resolve']
-
-
 def _info():
     import urlresolver
 
