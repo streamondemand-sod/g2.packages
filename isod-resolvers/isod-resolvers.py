@@ -20,37 +20,27 @@
 
 import os
 import re
-import sys
-import urllib
-import urlparse
 
-import xbmcaddon
 import importer
 
-from resources.lib.libraries import cleantitle
-from resources.lib.libraries import client
 from resources.lib.libraries import log
-
 from resources.lib import resolvers
 
 
-__all__ = ['info', 'resolve']
-
-
 _sod_addon_servers_package = 'servers'
-_sod_addon_servers_path = os.path.join(xbmcaddon.Addon('plugin.video.streamondemand').getAddonInfo('path'), _sod_addon_servers_package)
+
 _excluded_servers = [
     'servertools',      # Not a server
     'longurl',          # Looks like a short url resolver
 ]
 
 
-def _info():
+def info(paths):
     from core import logger
     logger.log_enable(False)
 
     info = []
-    for package, module, is_pkg in importer.walk_packages([_sod_addon_servers_path]):
+    for package, module, is_pkg in importer.walk_packages([os.path.join(paths[0], _sod_addon_servers_package)]):
         if is_pkg or module in _excluded_servers: continue
         try:
             m = getattr(__import__(_sod_addon_servers_package, globals(), locals(), [module], -1), module)
@@ -82,9 +72,6 @@ def _info():
                 'url_patterns': url_patterns,
             })
     return info
-
-
-info = _info()
 
 
 def resolve(module, url):
