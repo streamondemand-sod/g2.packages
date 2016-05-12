@@ -26,35 +26,26 @@ from resources.lib.libraries import cleantitle
 from resources.lib.libraries import client
 
 
-__all__ = ['get_movie', 'get_sources']
-
-
 _base_link = 'http://www.filmsenzalimiti.co'
 _search_link = '/?s=%s'
 
 
-def get_movie(module, dbids, title, year, language=None):
+def get_movie(module, title, **kwargs):
     query = _search_link % urllib.quote_plus(title)
     query = urlparse.urljoin(_base_link, query)
 
     result = client.request(query)
 
     result = client.parseDOM(result, 'div', attrs={'class': 'post-item-side'})[0]
-
     urls = client.parseDOM(result, 'a', ret='href')
     titles = client.parseDOM(result, 'img', attrs={'class': 'post-side-img'}, ret='title')
     titles = [unidecode.unidecode(client.replaceHTMLCodes(t)) for t in titles]
 
-    title = cleantitle.movie(title)
-    url = [u for u, t in map(None, urls, titles) if t and title == cleantitle.movie(t)][0]
-
-    url = urlparse.urlparse(url).path
-
-    return url
+    return map(None, urls, titles)
 
 
-def get_sources(module, url):
-    url = urlparse.urljoin(_base_link, url)
+def get_sources(module, vref):
+    url, title = vref
 
     result = client.request(url)
 
@@ -82,7 +73,7 @@ def get_sources(module, url):
             quality = 'HD' if q.strip() in ['720p', '1080p'] else 'SD'
             sources.append({'source': n.encode('utf-8'), 'quality': quality, 'url': u.encode('utf-8')})
 
-    if len(info):
-        for s in sources: s['info'] = info[0]
+    for s in sources:
+        s['info'] = ('' if not info else '[%s] '%(' '.join(info))) + title
 
     return sources

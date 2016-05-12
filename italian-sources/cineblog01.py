@@ -30,80 +30,31 @@ from resources.lib.libraries import client
 from lib import jsunpack
 
 
-__all__ = ['get_movie', 'get_sources', 'resolve']
-
-
 _base_link = 'http://www.cb01.co'
 _search_link = '/?s=%s'
 
 
-def get_movie(module, dbids, title, year, language='it'):
-    """
-    Input:
-        module      This source module idenfier represented as a list: [package_name, module_name [,sub_module_name]]
-        dbids       A dictionary with the identifier of the title in varius DB (imdb, tmdb)
-        title       The movie title
-        year        The movie release year
-        language    The ISO [639-1] two letter language identifier used for the title search
-
-    Output: The url to movie page in the source web site containing the sources (passed as 1st argument to get_sources)
-
-    NOTE: the output url is cached for later reuse.
-    """
+def get_movie(module, title, year, **kwargs):
     query = _search_link % urllib.quote_plus(title)
     query = urlparse.urljoin(_base_link, query)
 
     result = _cloudflare(query)
 
-    # Parse the result page
     result = client.parseDOM(result, 'div', attrs={'class': 'span12 filmbox'})
     result = [(client.parseDOM(i, 'a', ret='href')[0], client.parseDOM(i, 'h1')[0]) for i in result]
     result = [(u, unidecode.unidecode(client.replaceHTMLCodes(t))) for u, t in result]
 
-    # Filter by title / language
-    title = cleantitle.movie(title)
-    if language is None or language == 'it':
-        # If the search language is italian, ignore the sub-ita titles
-        result1 = [i for i in result if not re.search(r'SUB-ITA', i[1], flags=re.IGNORECASE)]
-        result2 = [i for i in result1 if title == cleantitle.movie(i[1])]
-    else:
-        # If the search language is NOT italian, do include only the sub-ita titles
-        result1 = [i for i in result if re.search(r'SUB-ITA', i[1], flags=re.IGNORECASE)]
-        result2 = [i for i in result1 if title == cleantitle.movie(i[1])]
-        # If no title matches, then try to compare the titles by first removing the italian title version:
-        # For example, the title:
-        #   '90 Minutes in Heaven - 90 minuti in Paradiso [Sub-ITA] (2015)'
-        # become:
-        #   '90 Minutes in Heaven [Sub-ITA] (2015)'
-        if len(result2) == 0:
-            result2 = [i for i in result1 if title == cleantitle.movie(re.sub(r'\s+-\s+[^\[\(]+', ' ', i[1]))]
-
-    # If the default title filter is too strict, then relax it ignoring the presence or not of the sub-ita tag
-    result = result2 if len(result2) else [i for i in result if title == cleantitle.movie(i[1])]
+    def cleantitle(title):
+        title = re.sub(r'\(.*\)', '', title)  # Anything within ()
+        title = re.sub(r'\[.*\]', '', title)  # Anything within []
+        return title
 
     # Filter by year only if the extracted title contains the year in the format '(YEAR)'
-    url = [i[0] for i in result if not re.search(r'\(\d{4}\)', i[1]) or any(x in i[1] for x in ['(%s)'%str(y) for y in range(int(year)-1,int(year)+2)])][0]
-
-    url = urlparse.urlparse(url).path
-
-    return url
+    return [(i[0], cleantitle(i[1])) for i in result if not re.search(r'\(\d{4}\)', i[1]) or any(x in i[1] for x in ['(%s)'%str(y) for y in range(int(year)-1, int(year)+2)])]
 
 
-def get_sources(module, url):
-    """
-    Input:
-        module      This source module idenfier represented as a list: [package_name, module_name [,sub_module_name]]
-        url         The url previously returned by the get_movie/get_episode
-
-    Output: A list of dictionary with the following attributes:
-        source:     The resolver (host) of the content
-        quality:    An indication of the quality level using the following keywords: '1080p' | 'HD' | 'SD' | 'SCR' | 'CAM'
-        info:       Additional info about the media (e.g. DVDRip, MD, etc.) presented on the 2nd line of the directory list
-        url:        The content url to be resolved
-
-    NOTE: the output list is cached for later reuse.
-    """
-    url = urlparse.urljoin(_base_link, url)
+def get_sources(module, vref):
+    url, title = vref
 
     result = client.request(url)
 
@@ -136,22 +87,13 @@ def get_sources(module, url):
             for url, host in map(None, client.parseDOM(i, 'a', ret='href'), client.parseDOM(i, 'a')):
                 sources.append({'source': cleantitle.normalize2(client.replaceHTMLCodes(host)), 'quality': quality, 'url': url})
 
-    if len(info):
-        for s in sources: s['info'] = ', '.join(info)
+    for s in sources:
+        s['info'] = ('' if not info else '[%s] '%(' '.join(info))) + title
 
     return sources
 
 
 def resolve(module, url):
-    """
-    Optional method in case the sources site provides the url ready for the resolvers
-
-    Input:
-        module      This source module idenfier represented as a list: [package_name, module_name [,sub_module_name]]
-        url         The url returned by the get_sources
-
-    Output: the url to be resolved via the resolvers
-    """
     result = client.request(url) if not 'go.php' in url else _cloudflare(url)
 
     scripts = client.parseDOM(result, 'script')
@@ -192,6 +134,8 @@ def _cloudflare(url):
         time.sleep(refresh_timeout)
 
         u = '%s://%s' % (urlparse.urlparse(url).scheme, urlparse.urlparse(url).netloc)
-        cookie = client.request('%s%s'%(u, refresh_url), headers=rheaders, referer=_base_link, output='cookie')
+        # cookie = client.request('%s%s'%(u, refresh_url), headers=rheaders, referer=_base_link, output='cookie')
+        cookie = client.request('%s%s'%(u, refresh_url), headers=rheaders, output='cookie')
 
-    return client.request(url, headers=rheaders, referer=_base_link, cookie=cookie)
+    # return client.request(url, headers=rheaders, referer=_base_link, cookie=cookie)
+    return client.request(url, headers=rheaders, cookie=cookie)
