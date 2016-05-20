@@ -19,7 +19,7 @@
 """
 
 
-def info():
+def info(paths):
     import urlresolver
 
     try:
