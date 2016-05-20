@@ -22,10 +22,13 @@ import os
 import re
 
 import importer
+import resolvers
 
-from resources.lib.libraries import log
-from resources.lib import resolvers
+from libraries import log
 
+
+# _log_debug = True
+# _log_trace_on_error = True
 
 _sod_addon_servers_package = 'servers'
 
@@ -42,10 +45,11 @@ def info(paths):
     info = []
     for package, module, is_pkg in importer.walk_packages([os.path.join(paths[0], _sod_addon_servers_package)]):
         if is_pkg or module in _excluded_servers: continue
+        log.debug('isod-resolvers: from %s import %s (%s)'%(_sod_addon_servers_package, module, type(module)))
         try:
             m = getattr(__import__(_sod_addon_servers_package, globals(), locals(), [module], -1), module)
         except Exception as e:
-            log.notice('isod-resolvers: from %s import %s: %s'%(_sod_addon_servers_package, module, e))
+            log.error('isod-resolvers: from %s import %s: %s'%(_sod_addon_servers_package, module, e))
             continue
         if not hasattr(m, 'get_video_url'): continue
 

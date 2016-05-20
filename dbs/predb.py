@@ -24,14 +24,13 @@ import json
 import urllib
 import urlparse
 
-from resources.lib import platform
-from resources.lib import language
+from libraries import log
+from libraries import client
+from libraries import workers
+from libraries import platform
+from libraries import language
 
-from resources.lib.libraries import client
-from resources.lib.libraries import workers
-from resources.lib.libraries import log
-
-from resources.lib.dbs import tmdb
+from dbs import tmdb
 
 
 info = {

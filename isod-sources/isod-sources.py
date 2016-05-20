@@ -26,9 +26,9 @@ import urlparse
 
 import importer
 
-from resources.lib.libraries import cleantitle
-from resources.lib.libraries import client
-from resources.lib.libraries import log
+from libraries import log
+from libraries import cleantitle
+from libraries import client
 
 
 _sod_addon_channels_package = 'channels'

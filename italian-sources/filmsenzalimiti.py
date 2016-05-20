@@ -22,8 +22,8 @@ import urllib
 import urlparse
 import unidecode
 
-from resources.lib.libraries import cleantitle
-from resources.lib.libraries import client
+from libraries import cleantitle
+from libraries import client
 
 
 _base_link = 'http://www.filmsenzalimiti.co'

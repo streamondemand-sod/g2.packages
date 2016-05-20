@@ -19,7 +19,7 @@
 """
 
 
-def _info():
+def info():
     import urlresolver
 
     try:
@@ -38,9 +38,6 @@ def _info():
         except Exception:
             pass
     return info
-
-
-info = _info()
 
 
 def resolve(module, url):
