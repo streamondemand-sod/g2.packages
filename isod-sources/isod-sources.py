@@ -41,7 +41,11 @@ _excluded_channels = [
 ]
 
 _channels_options = {
-    'cineblog01': {'source_quality_override': True, 'ignore_tags': ['Streaming HD:', 'Streaming:']},
+    'cineblog01': {
+        'source_quality_override': True,
+        'ignore_tags': ['Streaming HD:', 'Streaming:'],
+        'use_year': True,
+    },
 }
 
 
@@ -79,9 +83,10 @@ def get_movie(provider, title, year=None, language='it', **kwargs):
         return None
 
     try:
-        title_search = normalize_unicode(title, encoding='ascii')
-        title_search = urllib.quote_plus(title_search)
-        items = m.search(Item(), title_search)
+        search_terms = normalize_unicode(title, encoding='ascii')
+        if year and _channel_option(provider[2], 'use_year'):
+            search_terms += ' (%s)'%year
+        items = m.search(Item(), urllib.quote_plus(search_terms))
         if not items: return None
     except Exception as e:
         log.notice('isod-sources.get_movie(%s, %s, ...): %s'%(provider[2], title, e))

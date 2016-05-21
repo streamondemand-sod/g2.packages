@@ -24,8 +24,8 @@ import urllib
 import urlparse
 import unidecode
 
-from libraries import cleantitle
 from libraries import client
+from libraries import cleantitle
 
 from lib import jsunpack
 
@@ -35,7 +35,7 @@ _search_link = '/?s=%s'
 
 
 def get_movie(module, title, year, **kwargs):
-    query = _search_link % urllib.quote_plus(title)
+    query = _search_link % urllib.quote_plus('%s (%s)' % (title, year))
     query = urlparse.urljoin(_base_link, query)
 
     result = _cloudflare(query)
