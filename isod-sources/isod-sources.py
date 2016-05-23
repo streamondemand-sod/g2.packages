@@ -26,8 +26,8 @@ import urlparse
 
 import importer
 
+from unidecode import unidecode
 from libraries import log
-from libraries import cleantitle
 from libraries import client
 
 
@@ -42,10 +42,12 @@ _excluded_channels = [
 
 _channels_options = {
     'cineblog01': {
+        'remove_chars': ':',
+        'use_year': ' (%s)',
         'source_quality_override': True,
         'ignore_tags': ['Streaming HD:', 'Streaming:'],
-        'use_year': True,
     },
+    # (fixme) other channels might need custome flags as well...
 }
 
 
@@ -83,9 +85,11 @@ def get_movie(provider, title, year=None, language='it', **kwargs):
         return None
 
     try:
-        search_terms = normalize_unicode(title, encoding='ascii')
+        if _channel_option(provider[2], 'remove_chars'):
+            title = title.translate(None, _channel_option(provider[2], 'remove_chars'))
+        search_terms = unidecode(title, encoding='ascii')
         if year and _channel_option(provider[2], 'use_year'):
-            search_terms += ' (%s)'%year
+            search_terms += _channel_option(provider[2], 'use_year') % year
         items = m.search(Item(), urllib.quote_plus(search_terms))
         if not items: return None
     except Exception as e:
@@ -95,13 +99,7 @@ def get_movie(provider, title, year=None, language='it', **kwargs):
     # TODO: [(year)] filtering if returned in the title and year is provided
     # TODO: [(sub-ita)] filtering if returned in the title and language is provided
 
-    def cleantitle(title):
-        title = re.sub(r'\(.*\)', '', title)  # Anything within ()
-        title = re.sub(r'\[.*\]', '', title)  # Anything within []
-        return title
-
-    # NOTE: list of tuples: (url, matched_title[, additional_infos...])
-    return [(i.url, cleantitle(i.fulltitle), i.action, 'HD' if re.search(r'[^\w]HD[^\w]', i.fulltitle) else 'SD') for i in items]
+    return [(i.url, i.fulltitle, i.action, 'HD' if re.search(r'[^\w]HD[^\w]', i.fulltitle) else 'SD') for i in items]
 
 
 def get_sources(provider, vref):
@@ -186,9 +184,3 @@ def get_sources(provider, vref):
         log.debug('isod-sources.get_sources(%s, ...): %s'%(provider[2], sources[url]))
 
     return sources.values()
-
-
-def normalize_unicode(string, encoding='utf-8'):
-    from unicodedata import normalize
-    if string is None: string = ''
-    return normalize('NFKD', string if isinstance(string, unicode) else unicode(string, encoding, 'ignore')).encode(encoding, 'ignore')
