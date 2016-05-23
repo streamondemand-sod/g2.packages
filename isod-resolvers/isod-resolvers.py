@@ -22,7 +22,6 @@ import os
 import re
 
 import importer
-import resolvers
 
 from libraries import log
 
