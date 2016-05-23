@@ -24,8 +24,8 @@ import urllib
 import urlparse
 import unidecode
 
+from unidecode import unidecode
 from libraries import client
-from libraries import cleantitle
 
 from lib import jsunpack
 
@@ -35,22 +35,20 @@ _search_link = '/?s=%s'
 
 
 def get_movie(module, title, year, **kwargs):
+    title = title.translate(None, ':') # cb01 doesn't like the semicolons in the titles
     query = _search_link % urllib.quote_plus('%s (%s)' % (title, year))
     query = urlparse.urljoin(_base_link, query)
 
     result = _cloudflare(query)
 
+    result = result.decode('iso-8859-1').encode('utf-8')
     result = client.parseDOM(result, 'div', attrs={'class': 'span12 filmbox'})
     result = [(client.parseDOM(i, 'a', ret='href')[0], client.parseDOM(i, 'h1')[0]) for i in result]
-    result = [(u, unidecode.unidecode(client.replaceHTMLCodes(t))) for u, t in result]
+    result = [(u, unidecode(client.replaceHTMLCodes(t))) for u, t in result]
 
-    def cleantitle(title):
-        title = re.sub(r'\(.*\)', '', title)  # Anything within ()
-        title = re.sub(r'\[.*\]', '', title)  # Anything within []
-        return title
+    # TODO: [(sub-ita)] filtering if returned in the title and language is provided
 
-    # Filter by year only if the extracted title contains the year in the format '(YEAR)'
-    return [(i[0], cleantitle(i[1])) for i in result if not re.search(r'\(\d{4}\)', i[1]) or any(x in i[1] for x in ['(%s)'%str(y) for y in range(int(year)-1, int(year)+2)])]
+    return [i for i in result if not re.search(r'\(\d{4}\)', i[1]) or any(x in i[1] for x in ['(%s)'%str(y) for y in range(int(year)-1, int(year)+2)])]
 
 
 def get_sources(module, vref):
@@ -74,18 +72,22 @@ def get_sources(module, vref):
                 ignoresources = True
             elif 'Screen/Report' in i:
                 # Retrieve some info about the source (1st format)
-                try: info.append(cleantitle.normalize2(client.replaceHTMLCodes(re.search(r'</a>(.+)</strong>', i).group(1))).strip())
-                except: pass
+                try:
+                    info.append(unidecode(client.replaceHTMLCodes(re.search(r'</a>(.+)</strong>', i).group(1))).strip())
+                except:
+                    pass
             elif 'HD' in i:
                 # Check for the HD section
                 quality = 'HD'
             else:
                 # Retrieve some info about the source (2nd format)
-                try: info.append(cleantitle.normalize2(client.replaceHTMLCodes(re.search(r'<div align="right"><strong>.*?([A-Za-z0-9\.]+)</strong>', i).group(1))).strip())
-                except: pass
+                try:
+                    info.append(unidecode(client.replaceHTMLCodes(re.search(r'<div align="right"><strong>.*?([A-Za-z0-9\.]+)</strong>', i).group(1))).strip())
+                except:
+                    pass
         elif not ignoresources:
             for url, host in map(None, client.parseDOM(i, 'a', ret='href'), client.parseDOM(i, 'a')):
-                sources.append({'source': cleantitle.normalize2(client.replaceHTMLCodes(host)), 'quality': quality, 'url': url})
+                sources.append({'source': unidecode(client.replaceHTMLCodes(host)), 'quality': quality, 'url': url})
 
     for s in sources:
         s['info'] = ('' if not info else '[%s] '%(' '.join(info))) + title

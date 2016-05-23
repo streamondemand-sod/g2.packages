@@ -23,7 +23,7 @@ site = 'github://J0rdyz65/genesi2.packages/italian-sources'
     The :site: attribute is the pseudo-URL used to fetch the directory content in JSON format from GitHub.
 """
 
-addons = None
+addons = ['script.module.unidecode']
 """
     The :addons: attribute is a list of kodi addons identifier whose libraries have to be included
     in the sys.path in order for this package to work. For script.module.* addons the sys.path

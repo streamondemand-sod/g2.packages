@@ -20,9 +20,8 @@
 
 import urllib
 import urlparse
-import unidecode
 
-from libraries import cleantitle
+from unidecode import unidecode
 from libraries import client
 
 
@@ -39,7 +38,7 @@ def get_movie(module, title, **kwargs):
     result = client.parseDOM(result, 'div', attrs={'class': 'post-item-side'})[0]
     urls = client.parseDOM(result, 'a', ret='href')
     titles = client.parseDOM(result, 'img', attrs={'class': 'post-side-img'}, ret='title')
-    titles = [unidecode.unidecode(client.replaceHTMLCodes(t)) for t in titles]
+    titles = [unidecode(client.replaceHTMLCodes(t)) for t in titles]
 
     return map(None, urls, titles)
 
