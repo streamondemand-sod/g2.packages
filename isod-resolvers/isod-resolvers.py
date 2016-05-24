@@ -23,7 +23,7 @@ import re
 
 import importer
 
-from libraries import log
+from g2.libraries import log
 
 
 # _log_debug = True

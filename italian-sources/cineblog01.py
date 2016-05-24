@@ -25,7 +25,8 @@ import urlparse
 import unidecode
 
 from unidecode import unidecode
-from libraries import client
+
+from g2.libraries import client
 
 from lib import jsunpack
 

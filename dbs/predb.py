@@ -24,13 +24,12 @@ import json
 import urllib
 import urlparse
 
-from libraries import log
-from libraries import client
-from libraries import workers
-from libraries import platform
-from libraries import language
-
-from dbs import tmdb
+from g2.libraries import log
+from g2.libraries import client
+from g2.libraries import workers
+from g2.libraries import platform
+from g2.libraries import language
+from g2.dbs import tmdb
 
 
 info = {

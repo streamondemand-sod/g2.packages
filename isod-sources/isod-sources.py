@@ -27,8 +27,9 @@ import urlparse
 import importer
 
 from unidecode import unidecode
-from libraries import log
-from libraries import client
+
+from g2.libraries import log
+from g2.libraries import client
 
 
 _sod_addon_channels_package = 'channels'
