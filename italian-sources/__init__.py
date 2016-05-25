@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-    Genesi2 Add-on Package
+    G2 Add-on Package
     Copyright (C) 2016 J0rdyZ65
 
     This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-site = 'github://J0rdyz65/genesi2.packages/italian-sources'
+site = 'github://J0rdyz65/g2.packages/italian-sources'
 """
     The :site: attribute is the pseudo-URL used to fetch the directory content in JSON format from GitHub.
 """

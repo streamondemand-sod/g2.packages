@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-    Genesi2 Add-on Package
+    G2 Add-on Package
     Descifra el empaquetado javascript PACK de Dean Edwards
 """
 

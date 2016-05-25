@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-    Genesi2 Add-on Package
+    G2 Add-on Package
     Copyright (C) 2015 lambda
 
     This program is free software: you can redistribute it and/or modify
