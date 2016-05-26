@@ -29,9 +29,9 @@ from g2.libraries import log
 # _log_debug = True
 # _log_trace_on_error = True
 
-_sod_addon_servers_package = 'servers'
+_SOD_ADDON_SERVERS_PACKAGE = 'servers'
 
-_excluded_servers = [
+_EXCLUDED_SERVERS = [
     'servertools',      # Not a server
     'longurl',          # Looks like a short url resolver
 ]
@@ -41,16 +41,18 @@ def info(paths):
     from core import logger
     logger.log_enable(False)
 
-    info = []
-    for package, module, is_pkg in importer.walk_packages([os.path.join(paths[0], _sod_addon_servers_package)]):
-        if is_pkg or module in _excluded_servers: continue
-        log.debug('isod-resolvers: from %s import %s (%s)'%(_sod_addon_servers_package, module, type(module)))
-        try:
-            m = getattr(__import__(_sod_addon_servers_package, globals(), locals(), [module], -1), module)
-        except Exception as e:
-            log.error('isod-resolvers: from %s import %s: %s'%(_sod_addon_servers_package, module, e))
+    nfo = []
+    for package, module, is_pkg in importer.walk_packages([os.path.join(paths[0], _SOD_ADDON_SERVERS_PACKAGE)]):
+        if is_pkg or module in _EXCLUDED_SERVERS:
             continue
-        if not hasattr(m, 'get_video_url'): continue
+        log.debug('{m}.{f}: from %s import %s (%s)'%(_SOD_ADDON_SERVERS_PACKAGE, module, type(module)))
+        try:
+            mod = getattr(__import__(_SOD_ADDON_SERVERS_PACKAGE, globals(), locals(), [module], -1), module)
+        except Exception as ex:
+            log.error('{m}.{f}: from %s import %s: %s'%(_SOD_ADDON_SERVERS_PACKAGE, module, ex))
+            continue
+        if not hasattr(mod, 'get_video_url'):
+            continue
 
         source = package.find_module(module).get_source()
         url_patterns = []
@@ -63,21 +65,21 @@ def info(paths):
             try:
                 if re.compile(pat):
                     url_patterns.append(pat)
-            except Exception as e:
-                log.notice('isod-resolvers: %s: invalid pattern: %s'%(pat, e))
+            except Exception as ex:
+                log.notice('{m}.{f}: %s: invalid pattern: %s'%(pat, ex))
 
         if not url_patterns:
-            log.debug('isod-resolvers: %s: no url pattern found'%module)
+            log.debug('{m}.{f}: %s: no url pattern found'%module)
         else:
-            log.debug('isod-resolvers: %s: url patterns: %s'%(module, ' | '.join(url_patterns)))
-            info.append({
+            log.debug('{m}.{f}: %s: url patterns: %s'%(module, ' | '.join(url_patterns)))
+            nfo.append({
                 'name': module,
                 'url_patterns': url_patterns,
             })
-    return info
+    return nfo
 
 
 def resolve(module, url):
-    urls = getattr(__import__(_sod_addon_servers_package, globals(), locals(), [module[2]], -1), module[2]).get_video_url(url)
+    urls = getattr(__import__(_SOD_ADDON_SERVERS_PACKAGE, globals(), locals(), [module[2]], -1), module[2]).get_video_url(url)
 
     return None if not urls else urls[0][1]
