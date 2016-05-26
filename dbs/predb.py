@@ -68,9 +68,9 @@ def movies(url_):
         results = [(i[0], i[1][-1], i[2]) for i in results if len(i[1]) > 0]
         results = [(re.sub(r'(\.|\(|\[|LIMITED|UNCUT)', ' ', i[0]).strip(), i[1]) for i in results]
         results = [x for y, x in enumerate(results) if x not in results[0:y]]
-        log.debug('{m}.{f}(%s): %s'%(url_, results))
+        log.debug('{m}.{f}(%s): %s', url_, results)
     except Exception as ex:
-        log.notice('{m}.{f}(%s): %s'%(url_, ex))
+        log.notice('{m}.{f}(%s): %s', url_, ex)
         return None
 
     items = []
@@ -79,12 +79,12 @@ def movies(url_):
             title, year = item
             item = tmdb.movies(tmdb.url('movies{title}{year}', title=title, year=year))
             if not item:
-                log.debug('{m}.{f}(%s, %s): not found'%(title, year))
+                log.debug('{m}.{f}(%s, %s): not found', title, year)
             else:
                 item[0]['position'] = i
                 items.append(item[0])
         except Exception as ex:
-            log.notice('{m}.{f}(%s): %s'%(item, ex))
+            log.notice('{m}.{f}(%s): %s', item, ex)
 
     try:
         page = int(re.search(r'&page=(\d+)', url_).group(1))

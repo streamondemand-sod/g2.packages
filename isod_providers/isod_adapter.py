@@ -65,10 +65,10 @@ def info(paths):
         try:
             mod = getattr(__import__(_SOD_ADDON_CHANNELS_PACKAGE, globals(), locals(), [channel], -1), channel)
         except Exception as ex:
-            log.error('{m}.{f}: from %s import %s: %s'%(_SOD_ADDON_CHANNELS_PACKAGE, channel, ex))
+            log.error('{m}.{f}: from %s import %s: %s', _SOD_ADDON_CHANNELS_PACKAGE, channel, ex)
             continue
         if hasattr(mod, 'search'):
-            log.notice('{m}.{f}: channel %s added'%channel)
+            log.notice('{m}.{f}: channel %s added', channel)
             nfo.append({'name': channel})
 
     return nfo
@@ -81,7 +81,7 @@ def get_movie(provider, title, year=None, **kwargs):
     try:
         mod = getattr(__import__(_SOD_ADDON_CHANNELS_PACKAGE, globals(), locals(), [provider[2]], -1), provider[2])
     except Exception as ex:
-        log.error('{m}.{f}.get_movie(%s, ...): %s'%(provider[2], ex))
+        log.error('{m}.{f}.get_movie(%s, ...): %s', provider[2], ex)
         return None
 
     try:
@@ -94,7 +94,7 @@ def get_movie(provider, title, year=None, **kwargs):
         if not items:
             return None
     except Exception as ex:
-        log.notice('{m}.{f}.get_movie(%s, %s, ...): %s'%(provider[2], title, ex))
+        log.notice('{m}.{f}.get_movie(%s, %s, ...): %s', provider[2], title, ex)
         return None
 
     # (fixme): [(year)] filtering if returned in the title and year is provided
@@ -121,19 +121,19 @@ def get_sources(provider, vref):
             item.action = 'servertools.find_video_items'
             sitems = servertools.find_video_items(item)
     except Exception as ex:
-        log.notice('{m}.{f}.get_sources(%s, ...): %s'%(provider[2], ex))
+        log.notice('{m}.{f}.get_sources(%s, ...): %s', provider[2], ex)
         return []
 
     if not sitems:
-        log.debug('{m}.{f}.get_sources(%s, ...): no sources found by %s(%s)'%(provider[2], item.action, item.url))
+        log.debug('{m}.{f}.get_sources(%s, ...): no sources found by %s(%s)', provider[2], item.action, item.url)
 
     sources = {}
     for sitem in sitems:
         if sitem.action != 'play':
-            log.debug('{m}.{f}.get_sources(%s, ...): play action not specified for source %s'%(provider[2], sitem.__dict__))
+            log.debug('{m}.{f}.get_sources(%s, ...): play action not specified for source %s', provider[2], sitem.__dict__)
             continue
 
-        log.debug('{m}.{f}.get_sources(%s, ...): processing source %s'%(provider[2], sitem.__dict__))
+        log.debug('{m}.{f}.get_sources(%s, ...): processing source %s', provider[2], sitem.__dict__)
 
         stitle = sitem.title        
 
@@ -178,7 +178,7 @@ def get_sources(provider, vref):
             except Exception:
                 pitems = []
             if not len(pitems):
-                log.debug('{m}.{f}.get_sources(%s, ...): url cannot be resolved for source %s'%(provider[2], sitem.__dict__))
+                log.debug('{m}.{f}.get_sources(%s, ...): url cannot be resolved for source %s', provider[2], sitem.__dict__)
                 continue
             url = pitems[0].url
             action = pitems[0].action
@@ -190,6 +190,6 @@ def get_sources(provider, vref):
             'url': url,
         }
 
-        log.debug('{m}.{f}.get_sources(%s, ...): %s'%(provider[2], sources[url]))
+        log.debug('{m}.{f}.get_sources(%s, ...): %s', provider[2], sources[url])
 
     return sources.values()
