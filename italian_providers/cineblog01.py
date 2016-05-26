@@ -35,9 +35,9 @@ _BASE_LINK = 'http://www.cb01.co'
 _SEARCH_LINK = '/?s=%s'
 
 
-def get_movie(dummy_module, title, year, **dummy_kwargs):
+def get_movie(dummy_module, title, year=None, **dummy_kwargs):
     title = title.translate(None, ':') # cb01 doesn't like the semicolons in the titles
-    query = _SEARCH_LINK % urllib.quote_plus('%s (%s)' % (title, year))
+    query = _SEARCH_LINK % urllib.quote_plus('%s (%s)' % (title, year) if year else title)
     query = urlparse.urljoin(_BASE_LINK, query)
 
     result = _cloudflare(query)
@@ -146,9 +146,7 @@ def _cloudflare(url):
         refresh_url = headers['refresh'][6:]
         time.sleep(refresh_timeout)
 
-        url = '%s://%s' % (urlparse.urlparse(url).scheme, urlparse.urlparse(url).netloc)
-        # cookie = client.request('%s%s'%(u, refresh_url), headers=rheaders, referer=_BASE_LINK, output='cookie')
-        cookie = client.request(urlparse.urljoin(url, refresh_url), headers=rheaders, output='cookie')
+        url_cookie = '%s://%s' % (urlparse.urlparse(url).scheme, urlparse.urlparse(url).netloc)
+        cookie = client.request(urlparse.urljoin(url_cookie, refresh_url), headers=rheaders, output='cookie')
 
-    # return client.request(url, headers=rheaders, referer=_BASE_LINK, cookie=cookie)
     return client.request(url, headers=rheaders, cookie=cookie)
