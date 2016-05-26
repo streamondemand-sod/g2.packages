@@ -18,7 +18,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-site = 'github://J0rdyz65/g2.packages/isod-providers'
+site = 'github://J0rdyz65/g2.packages/isod_providers'
 """
     The :site: attribute is the pseudo-URL used to fetch the directory content in JSON format from GitHub.
 """

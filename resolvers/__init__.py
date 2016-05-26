@@ -31,3 +31,5 @@ addons = None
     augmented with the addon main directory.
     If None or absent, it is assumed that this package doesn't require other addons to be installed.
 """
+
+# (fixme) update the package to the new g2.pkg API!!!
