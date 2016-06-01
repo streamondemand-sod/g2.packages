@@ -20,14 +20,13 @@
 
 import re
 
-from resources.lib.libraries import client
-from resources.lib.resolvers import ResolverError
+from g2.libraries import client
+from g2.resolvers import ResolverError
 
 
-__all__ = ['netloc', 'resolve']
-
-
-netloc = ['streamin.to']
+info = {
+    'domains': ['streamin.to'],
+}
 
 
 def resolve(module, url):
@@ -35,9 +34,10 @@ def resolve(module, url):
         code = re.search(r'streamin.to/([a-z0-9A-Z]+)', url).group(1)
         url = 'http://streamin.to/embed-%s.html'%code
 
-    result = client.request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.8.1.14) Gecko/20080404 Firefox/2.0.0.14'})
+    result = client.request(url)
 
-    if 'File was deleted' in result: return ResolverError('File was deleted')
+    if 'File was deleted' in result:
+        return ResolverError('File was deleted')
 
     site = re.search(r'image: "(http://[^/]+)', result).group(1)
     path = re.search(r'file: "([^"]+)"', result).group(1).split('=')[1]

@@ -20,36 +20,37 @@
 
 import re
 
-from resources.lib.libraries import client
-from resources.lib.resolvers import ResolverError
+from g2.libraries import client
+from g2.resolvers import ResolverError
 
 
-__all__ = ['netloc', 'resolve']
-
-
-netloc = ['nowvideo.eu', 'nowvideo.sx', 'nowvideo.li']
+info = {
+    'domains': ['nowvideo.eu', 'nowvideo.sx', 'nowvideo.li'],
+}
 
 
 def resolve(module, url):
-    id = re.compile('//.+?/.+?/([\w]+)').findall(url)
-    id += re.compile('//.+?/.+?v=([\w]+)').findall(url)
-    id = id[0]
+    videoid = re.compile(r'//.+?/.+?/([\w]+)').findall(url)
+    videoid += re.compile(r'//.+?/.+?v=([\w]+)').findall(url)
+    videoid = videoid[0]
 
-    url = 'http://embed.nowvideo.sx/embed.php?v=%s' % id
+    url = 'http://embed.nowvideo.sx/embed.php?v=%s' % videoid
 
     result = client.request(url)
 
     key = re.compile('flashvars.filekey=(.+?);').findall(result)[-1]
-    try: key = re.compile('\s+%s="(.+?)"' % key).findall(result)[-1]
-    except: pass
+    try:
+        key = re.compile(r'\s+%s="(.+?)"' % key).findall(result)[-1]
+    except Exception:
+        pass
 
-    url = 'http://www.nowvideo.sx/api/player.api.php?key=%s&file=%s' % (key, id)
+    url = 'http://www.nowvideo.sx/api/player.api.php?key=%s&file=%s' % (key, videoid)
     result = client.request(url)
 
     try:
         # error=1&error_msg=The video no longer exists
         return ResolverError(re.compile('error_msg=(.*)').findall(result)[0])
-    except:
+    except Exception:
         pass
 
     url = re.compile('url=(.+?)&').findall(result)[0]

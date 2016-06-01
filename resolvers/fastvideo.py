@@ -20,30 +20,31 @@
 
 import re
 
-from resources.lib.libraries import client
-from resources.lib.resolvers import ResolverError
+from g2.libraries import client
+from g2.resolvers import ResolverError
 
-from lib import jsunpack
-
-
-__all__ = ['netloc', 'resolve']
+from .lib import jsunpack
 
 
-netloc = ['fastvideo.in', 'fastvideo.me', 'faststream.in', 'rapidvideo.ws']
+info = {
+    'domains': ['fastvideo.in', 'fastvideo.me', 'faststream.in', 'rapidvideo.ws'],
+}
 
 
 def resolve(module, url):
     rurl = url.replace('/embed-', '/')
-    rurl = re.compile('//.+?/([\w]+)').findall(rurl)[0]
+    rurl = re.compile(r'//.+?/([\w]+)').findall(rurl)[0]
     rurl = 'http://rapidvideo.ws/embed-%s.html' % rurl
 
     result = client.request(rurl, mobile=True)
 
-    if 'File was deleted' in result: return ResolverError('File was deleted')
+    if 'File was deleted' in result:
+        return ResolverError('File was deleted')
 
-    if not jsunpack.detect(result): return None
+    if not jsunpack.detect(result):
+        return None
 
-    result = re.compile('(eval.*?\)\)\))').findall(result)[-1]
+    result = re.compile(r'(eval.*?\)\)\))').findall(result)[-1]
     result = jsunpack.unpack(result)
 
     url = client.parseDOM(result, 'embed', ret='src')

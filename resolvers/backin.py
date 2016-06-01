@@ -20,19 +20,19 @@
 
 import re
 
-from resources.lib.libraries import client
-from resources.lib.resolvers import ResolverError
+from g2.libraries import client
+from g2.resolvers import ResolverError
 
 
-__all__ = ['netloc', 'resolve']
-
-
-netloc = ['backin.net']
+info = {
+    'domains': ['backin.net'],
+}
 
 
 def resolve(module, url):
     r = client.request(url, output='response', error=True)
 
-    if 'HTTP Error' in r[0]: return ResolverError(r[0])
+    if 'HTTP Error' in r[0]:
+        return ResolverError(r[0])
 
     return re.search(r'window.pddurl="([^"]+)"', r[1]).group(1)

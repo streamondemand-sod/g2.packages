@@ -18,13 +18,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from resources.lib.libraries import client
+from g2.libraries import client
 
 
-__all__ = ['netloc', 'resolve']
-
-
-netloc = ['akstream.video']
+info = {
+    'domains': ['akstream.video'],
+}
 
 
 def resolve(module, url):
@@ -35,7 +34,8 @@ def resolve(module, url):
 
     result = client.parseDOM(result, 'input', attrs={'type': 'hidden', 'name': 'streamLink'}, ret='value')[0]
 
-    result = client.request('http://akstream.video/viewvideo.php', post='streamLink=%s'%result, referer=url, cookie="; ".join(cookie))
+    result = client.request('http://akstream.video/viewvideo.php',
+                            post='streamLink=%s'%result, referer=url, cookie="; ".join(cookie))
 
     url = client.parseDOM(result, 'source', attrs={'type': 'video/mp4'}, ret='src')[0]
 

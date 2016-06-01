@@ -20,13 +20,12 @@
 
 import re
 
-from resources.lib.libraries import client
+from g2.libraries import client
 
 
-__all__ = ['netloc', 'resolve']
-
-
-netloc = ['openload.io', 'openload.co']
+info = {
+    'domains': ['openload.io', 'openload.co'],
+}
 
 
 def resolve(module, url):

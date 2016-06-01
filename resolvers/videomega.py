@@ -21,14 +21,13 @@
 import re
 import urlparse
 
-from resources.lib.libraries import client
+from g2.libraries import client
 from lib import jsunpack
 
 
-__all__ = ['netloc', 'resolve']
-
-
-netloc = ['videomega.tv']
+info = {
+    'domains': ['videomega.tv'],
+}
 
 
 def resolve(module, url):

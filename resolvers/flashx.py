@@ -20,15 +20,14 @@
 
 import re
 
-from resources.lib.libraries import client
+from g2.libraries import client
 
-from lib import jsunpack
-
-
-__all__ = ['netloc', 'resolve']
+from .lib import jsunpack
 
 
-netloc = ['flashx.tv']
+info = {
+    'domains': ['flashx.tv'],
+}
 
 
 def resolve(module, url):

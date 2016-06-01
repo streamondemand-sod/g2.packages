@@ -20,29 +20,32 @@
 
 import re
 
-from resources.lib.libraries import client
-from resources.lib.resolvers import ResolverError
-from lib import unpackerjs3
+from g2.libraries import client
+from g2.resolvers import ResolverError
+
+from .lib import unpackerjs3
 
 
-__all__ = ['netloc', 'resolve']
-
-
-netloc = ['videowood.tv']
+info = {
+    'domains': ['videowood.tv'],
+}
 
 
 def resolve(module, url):
     result = client.request(url.replace('/video/', '/embed/'), output='response', error=True)
     
-    if 'HTTP Error' in result[0]: return ResolverError(result[0])
-    if 'video is not ready yet' in result[1]: return ResolverError('Video is not ready yet')
+    if 'HTTP Error' in result[0]:
+        return ResolverError(result[0])
+    if 'video is not ready yet' in result[1]:
+        return ResolverError('Video is not ready yet')
 
     scripts = client.parseDOM(result[1], 'script')
     for i in scripts:
-        match = re.search('(eval\(function\(p,a,c,k,e,d.*)', i)
+        match = re.search(r'(eval\(function\(p,a,c,k,e,d.*)', i)
         if match:
             result = unpackerjs3.unpackjs(match.group(1))
             match = re.search(r'"file"\s*:\s*"([^"]+/video/[^"]+)', result, re.DOTALL)
-            if match: return match.group(1)
+            if match:
+                return match.group(1)
 
     return None
