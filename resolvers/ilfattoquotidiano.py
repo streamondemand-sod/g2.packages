@@ -2,6 +2,7 @@
 
 """
     G2 Add-on Package
+    Thanks to NeverWise
     Copyright (C) 2016 J0rdyZ65
 
     This program is free software: you can redistribute it and/or modify
@@ -23,21 +24,21 @@ from g2.libraries import log
 from g2.libraries import client2
 
 
+_log_debug = True
+
 info = {
     'domains': ['ilfattoquotidiano.it'],
 }
 
 
 def resolve(module, url):
-    # res = Util.getResponseBS(url)
-    res = client2.get(url, bs_body=True)
+    res = client2.get(url)
 
-    video = res.bs_body.find('video', {'id' : 'bcPlayer'})
-    log.notice('{m}.{f}: VIDEO=%s', video)
+    video = client2.parseDOM(res.content, 'video', attrs={'id':'bcPlayer'}, ret=['data-account', 'data-video-id'])[0]
 
     url = 'https://edge.api.brightcove.com/playback/v1/accounts/{data_account}/videos/{data_video_id}'.format(
-        data_account=video['data-account'],
-        data_video_id=video['data-video-id'],
+        data_account=video['data-account'][0],
+        data_video_id=video['data-video-id'][0],
     )
     headers = {
         'Accept': 'application/json;pk=BCpkADawqM0xNxj2Rs11iwmFoNJoG2nXUQs67brI7oR2qm0Dwn__kPcbvLJb7M34IY2ar-WxWvi8wHr6cRbP7nmgilWaDrqZEeQm4O5K6z6B2A3afiPFbv7T4LcsQKN2PqIIgIIr3AXq43vL',
@@ -47,6 +48,6 @@ def resolve(module, url):
     # Filter out the sources without src link
     sources = sorted(res['sources'], key=lambda i: i.get('avg_bitrate', 0)*(1 if i.get('src') else 0), reverse=True)
     for src in sources:
-        log.notice('{m}.{f}: SOURCE=%s', src)
+        log.debug('{m}.{f}: SOURCE=%s', src)
 
     return sources[0]['src']
