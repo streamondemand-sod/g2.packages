@@ -27,7 +27,6 @@ import importer
 from unidecode import unidecode
 
 from g2.libraries import log
-from g2.libraries import client
 
 
 _SOD_ADDON_CHANNELS_PACKAGE = 'channels'
