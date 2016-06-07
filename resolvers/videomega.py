@@ -22,7 +22,7 @@ import re
 import urlparse
 
 from g2.libraries import client
-from lib import jsunpack
+from .lib import jsunpack
 
 
 info = {

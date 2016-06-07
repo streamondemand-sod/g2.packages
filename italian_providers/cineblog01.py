@@ -28,7 +28,7 @@ from unidecode import unidecode
 
 from g2.libraries import client
 
-from lib import jsunpack
+from .lib import jsunpack
 
 
 _BASE_LINK = 'http://www.cb01.co'
