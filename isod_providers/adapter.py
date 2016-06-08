@@ -69,7 +69,7 @@ def info(paths):
         if hasattr(mod, 'search'):
             nfo.append({'name': channel})
 
-    log.notice('{m}.{f}: %d channels found', len(nfo))
+    log.notice('{p}: %d channels found', len(nfo))
 
     return nfo
 
