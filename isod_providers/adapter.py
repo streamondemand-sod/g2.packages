@@ -67,8 +67,9 @@ def info(paths):
             log.error('{m}.{f}: from %s import %s: %s', _SOD_ADDON_CHANNELS_PACKAGE, channel, ex)
             continue
         if hasattr(mod, 'search'):
-            log.notice('{m}.{f}: channel %s added', channel)
             nfo.append({'name': channel})
+
+    log.notice('{m}.{f}: %d channels found', len(nfo))
 
     return nfo
 
