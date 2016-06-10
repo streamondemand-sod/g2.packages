@@ -23,11 +23,11 @@ import re
 import urllib
 
 from g2.libraries import log
-from g2.libraries import client
+from g2.libraries import client2
 from g2.libraries import workers
 from g2.libraries import platform
 from g2.libraries import language
-from g2.dbs import tmdb
+from g2 import dbs
 
 
 info = {
@@ -39,52 +39,50 @@ info = {
 
 _INFO_LANG = platform.setting('infoLang') or 'en'
 
-_urls = {
-    'movies_recently_added{}': 'http://predb.me/?search=-MD&cats=movies&language=%s&page=1' % language.name(_INFO_LANG)
+_BASE_URL = 'http://predb.me'
+_URLS = {
+    'movies_recently_added{}': _BASE_URL+'/?search=-MD&cats=movies&language=%s&page=1'%language.name(_INFO_LANG)
 }
 
 
 def url(kind=None, **kwargs):
     if not kind:
-        return _urls.keys()
-    if kind not in _urls:
+        return _URLS.keys()
+    if kind not in _URLS:
         return None
 
     for key, val in kwargs.iteritems():
         kwargs[key] = urllib.quote_plus(str(val))
 
-    return _urls[kind].format(**kwargs)
+    return _URLS[kind].format(**kwargs)
 
 
 def movies(url_):
-    try:
-        result = client.request(url_)
-        results = client.parseDOM(result, 'div', attrs={'class': 'post'})
-        results = [(client.parseDOM(i, 'a', attrs={'class': 'p-title.*?'}),
-                    re.compile(r'(\d{4}-\d{2}-\d{2})').findall(i)) for i in results]
-        results = [(i[0][0], i[1][0]) for i in results if len(i[0]) > 0 and len(i[1]) > 0]
-        results = [(re.sub(r'(\.|\(|\[|\s)(\d{4}|S\d*E\d*|3D)(\.|\)|\]|\s)(.+)', '', i[0]),
-                    re.compile(r'[\.|\(|\[|\s](\d{4})[\.|\)|\]|\s]').findall(i[0]), re.sub('[^0-9]', '', i[1])) for i in results]
-        results = [(i[0], i[1][-1], i[2]) for i in results if len(i[1]) > 0]
-        results = [(re.sub(r'(\.|\(|\[|LIMITED|UNCUT)', ' ', i[0]).strip(), i[1]) for i in results]
-        results = [x for y, x in enumerate(results) if x not in results[0:y]]
-        log.debug('{m}.{f}(%s): %s', url_, results)
-    except Exception as ex:
-        log.notice('{m}.{f}(%s): %s', url_, ex)
-        return None
+    result = client2.get(url_).content
+    results = client2.parseDOM(result, 'div', attrs={'class': 'post'})
+    results = [(client2.parseDOM(i, 'a', attrs={'class': 'p-title.*?'}),
+                re.compile(r'(\d{4}-\d{2}-\d{2})').findall(i)) for i in results]
+    results = [(i[0][0], i[1][0]) for i in results if len(i[0]) > 0 and len(i[1]) > 0]
+    results = [(re.sub(r'(\.|\(|\[|\s)(\d{4}|S\d*E\d*|3D)(\.|\)|\]|\s)(.+)', '', i[0]),
+                re.compile(r'[\.|\(|\[|\s](\d{4})[\.|\)|\]|\s]').findall(i[0]), re.sub('[^0-9]', '', i[1])) for i in results]
+    results = [(i[0], i[1][-1], i[2]) for i in results if len(i[1]) > 0]
+    results = [(re.sub(r'(\.|\(|\[|LIMITED|UNCUT)', ' ', i[0]).strip(), i[1]) for i in results]
+    results = [x for y, x in enumerate(results) if x not in results[0:y]]
+
+    log.debug('{m}.{f}: %s: %s listings', url_.replace(_BASE_URL, ''), len(results))
 
     items = []
     def predb_item(i, item):
         try:
             title, year = item
-            item = tmdb.movies(tmdb.url('movies{title}{year}', title=title, year=year))
+            item = dbs.movies(dbs.url('movies{title}{year}', title=title, year=year))
             if not item:
                 log.debug('{m}.{f}(%s, %s): not found', title, year)
             else:
                 item[0]['position'] = i
                 items.append(item[0])
         except Exception as ex:
-            log.notice('{m}.{f}(%s): %s', item, ex)
+            log.notice('{m}.{f}: %s: %s', item, repr(ex))
 
     try:
         page = int(re.search(r'&page=(\d+)', url_).group(1))
@@ -95,6 +93,7 @@ def movies(url_):
         next_page = 0
 
     threads = []
+    # (fixme) schedule a max of defs.MAX_CONCURRENT_THREADS number of threads
     for i, item in enumerate(results):
         threads.append(workers.Thread(predb_item, i, item))
     dummy = [i.start() for i in threads]
