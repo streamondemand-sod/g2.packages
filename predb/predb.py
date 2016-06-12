@@ -36,7 +36,7 @@ _log_debug = True
 info = {
     'priority': 9,
     'domains': ['predb.me'],
-    'methods': ['url', 'movies'],
+    'methods': ['resolve', 'movies'],
 }
 
 
