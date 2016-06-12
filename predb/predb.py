@@ -30,6 +30,9 @@ from g2.libraries import language
 from g2 import dbs
 
 
+_log_debug = True
+
+
 info = {
     'priority': 9,
     'domains': ['predb.me'],
@@ -45,7 +48,7 @@ _URLS = {
 }
 
 
-def url(kind=None, **kwargs):
+def resolve(kind=None, **kwargs):
     if not kind:
         return _URLS.keys()
     if kind not in _URLS:
@@ -57,8 +60,8 @@ def url(kind=None, **kwargs):
     return _URLS[kind].format(**kwargs)
 
 
-def movies(url_):
-    result = client2.get(url_).content
+def movies(url):
+    result = client2.get(url).content
     results = client2.parseDOM(result, 'div', attrs={'class': 'post'})
     results = [(client2.parseDOM(i, 'a', attrs={'class': 'p-title.*?'}),
                 re.compile(r'(\d{4}-\d{2}-\d{2})').findall(i)) for i in results]
@@ -69,28 +72,37 @@ def movies(url_):
     results = [(re.sub(r'(\.|\(|\[|LIMITED|UNCUT)', ' ', i[0]).strip(), i[1]) for i in results]
     results = [x for y, x in enumerate(results) if x not in results[0:y]]
 
-    log.debug('{m}.{f}: %s: %s listings', url_.replace(_BASE_URL, ''), len(results))
+    log.debug('{m}.{f}: %s: %s listings', url.replace(_BASE_URL, ''), len(results))
 
     items = []
-    def predb_item(i, item):
+    def predb_item(i, title_year):
         try:
-            title, year = item
-            item = dbs.movies(dbs.url('movies{title}{year}', title=title, year=year))
+            title, year = title_year
+            item = dbs.movies('movies{title}{year}', title=title, year=year)
             if not item:
-                log.debug('{m}.{f}(%s, %s): not found', title, year)
+                log.debug('{m}.{f}: %s (%s): no matching movies', title_year)
             else:
+                # (fixme) a fuzzy logic should be used here to match the best result in item
                 item[0]['position'] = i
                 items.append(item[0])
         except Exception as ex:
-            log.notice('{m}.{f}: %s: %s', item, repr(ex))
+            log.notice('{m}.{f}: %s (%s): %s', title_year, repr(ex))
 
+    max_pages = 0
     try:
-        page = int(re.search(r'&page=(\d+)', url_).group(1))
+        page = int(re.search(r'&page=(\d+)', url).group(1))
         next_page = page + 1
-        next_url = url_.replace('&page=%d'%page, '&page=%d'%next_page)
+        next_url = url.replace('&page=%d'%page, '&page=%d'%next_page)
+        try:
+            max_pages = int(client2.parseDOM('a', attrs={'class': 'page-button last-page'}).split(' ')[0])
+        except Exception:
+            max_pages = 0
     except Exception:
         next_url = ''
         next_page = 0
+
+    log.debug('{m}.{f}: %s: next_url=%s, next_page=%s, max_pages=%s',
+              url.replace(_BASE_URL, ''), next_url.replace(_BASE_URL, ''), next_page, max_pages)
 
     threads = []
     # (fixme) schedule a max of defs.MAX_CONCURRENT_THREADS number of threads
