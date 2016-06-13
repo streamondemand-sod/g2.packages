@@ -44,7 +44,7 @@ _INFO_LANG = platform.setting('infoLang') or 'en'
 
 _BASE_URL = 'http://predb.me'
 _URLS = {
-    'movies_recently_added{}': _BASE_URL+'/?search=-MD&cats=movies&language=%s&page=1'%language.name(_INFO_LANG)
+    'movies_recently_added{}': _BASE_URL+'/?search=-MD&cats=movies&language=%s&page=1|24'%language.name(_INFO_LANG)
 }
 
 
