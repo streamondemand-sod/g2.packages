@@ -26,7 +26,7 @@ import unidecode
 
 from unidecode import unidecode
 
-from g2.libraries import client
+from g2.libraries import client2
 
 from .lib import jsunpack
 
@@ -43,11 +43,9 @@ def get_movie(dummy_module, title, year=None, **dummy_kwargs):
     result = _cloudflare(query)
 
     result = result.decode('iso-8859-1').encode('utf-8')
-    result = client.parseDOM(result, 'div', attrs={'class': 'span12 filmbox'})
-    result = [(client.parseDOM(i, 'a', ret='href')[0], client.parseDOM(i, 'h1')[0]) for i in result]
-    result = [(u, unidecode(client.replaceHTMLCodes(t))) for u, t in result]
-
-    # (fixme): [(sub-ita)] filtering if returned in the title and language is provided
+    result = client2.parseDOM(result, 'div', attrs={'class': 'span12 filmbox'})
+    result = [(client2.parseDOM(i, 'a', ret='href')[0], client2.parseDOM(i, 'h1')[0]) for i in result]
+    result = [(u, unidecode(client2.replaceHTMLCodes(t))) for u, t in result]
 
     return [i for i in result
             if not re.search(r'\(\d{4}\)', i[1])
@@ -57,46 +55,43 @@ def get_movie(dummy_module, title, year=None, **dummy_kwargs):
 def get_sources(dummy_module, ref):
     url, title = ref
 
-    result = client.request(url)
-
-    result = result.decode('iso-8859-1').encode('utf-8')
-    result = client.parseDOM(result, 'div', attrs={'class': 'post_content'})
-    result = client.parseDOM(result, 'td', attrs={'valign': 'top'})
-    result = client.parseDOM(result, 'table', noattrs=False)
+    result = client2.request(url).content
+    result = client2.parseDOM(result, 'table', attrs={})
+    result = [t for t in result if 'Streaming:' in t][0]
+    result = client2.parseDOM(result, 'td', attrs={})
+    result = reduce(lambda x, y: x+y, [client2.parseDOM(t, 'td', attrs={}) for t in result], [])
 
     sources = []
     quality = 'SD'
-    ignoresources = False
+    sources_area = False
     info = []
-    for i in result:
-        if client.parseDOM(i, 'strong'):
-            if 'Download' in i or '3D' in i:
-                # Ignore Download / 3D section for now
-                ignoresources = True
-            elif 'Screen/Report' in i:
-                # Retrieve some info about the source (1st format)
-                try:
-                    nfo = re.search(r'</a>(.+)</strong>', i).group(1)
-                    info.append(unidecode(client.replaceHTMLCodes(nfo)).strip())
-                except Exception:
-                    pass
-            elif 'HD' in i:
-                # Check for the HD section
+    for tdi in result:
+        if 'Streaming' in tdi:
+            sources_area = True
+            if 'HD' in tdi:
                 quality = 'HD'
-            else:
-                # Retrieve some info about the source (2nd format)
-                try:
-                    nfo = re.search(r'<div align="right"><strong>.*?([A-Za-z0-9\.]+)</strong>', i).group(1)
-                    info.append(unidecode(client.replaceHTMLCodes(info)).strip())
-                except Exception:
-                    pass
-        elif not ignoresources:
-            for url, host in zip(client.parseDOM(i, 'a', ret='href'), client.parseDOM(i, 'a')):
-                sources.append({
-                    'source': unidecode(client.replaceHTMLCodes(host)),
-                    'quality': quality,
-                    'url': url,
-                })
+
+        elif 'Download' in tdi:
+            sources_area = False
+
+        else:
+            try:
+                divs = client2.parseDOM(tdi, 'div', attrs={'align': 'right'})
+                if divs:
+                    nfo = client2.parseDOM(divs[0], 'strong')[0]
+                    nfo = re.sub(r'<a.*?</a>', '', nfo)
+                    info.append(unidecode(client2.replaceHTMLCodes(nfo)).strip())
+
+                elif sources_area:
+                    url = client2.parseDOM(tdi, 'a', ret='href')[0]
+                    host = client2.parseDOM(tdi, 'a')[0]
+                    sources.append({
+                        'source': unidecode(client2.replaceHTMLCodes(host)),
+                        'quality': quality,
+                        'url': url,
+                    })
+            except Exception:
+                pass
 
     for src in sources:
         src['info'] = ('' if not info else '[%s] '%(' '.join(info))) + title
@@ -105,9 +100,9 @@ def get_sources(dummy_module, ref):
 
 
 def resolve(dummy_module, url):
-    result = client.request(url) if not 'go.php' in url else _cloudflare(url)
+    result = client2.request(url).content if not 'go.php' in url else _cloudflare(url)
 
-    scripts = client.parseDOM(result, 'script')
+    scripts = client2.parseDOM(result, 'script')
     rurl = None
     for i in scripts:
         match = re.search(r'(eval\(function\(p,a,c,k,e,d.*)', i)
@@ -125,28 +120,24 @@ def resolve(dummy_module, url):
             break
 
     if not rurl:
-        rurl = client.parseDOM(result, 'a', attrs={'class': 'btn-wrapper'}, ret='href')[0]
+        rurl = client2.parseDOM(result, 'a', attrs={'class': 'btn-wrapper'}, ret='href')[0]
 
     return rurl
 
 
 def _cloudflare(url):
-    rheaders = {
+    headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; rv:38.0) Gecko/20100101 Firefox/38.0',
     }
 
-    # Do expect an HTTP error on the first request
-    headers = client.request(url, headers=rheaders, referer=_BASE_LINK, output='headers', error=True)
+    with client2.Session(headers=headers) as session:
+        res = session.request(url)
 
-    if not 'refresh' in headers:
-        cookie = None
-    else:
-        # refresh=8;URL=/cdn-cgi/l/chk_jschl?pass=1457690427.305-qGo9Ho8gdZ
-        refresh_timeout = int(headers['refresh'][:1])
-        refresh_url = headers['refresh'][6:]
-        time.sleep(refresh_timeout)
+        if 'refresh' in res.headers:
+            # refresh=8;URL=/cdn-cgi/l/chk_jschl?pass=1457690427.305-qGo9Ho8gdZ
+            refresh_timeout = int(res.headers['refresh'][:1])
+            refresh_url = res.headers['refresh'][6:]
+            time.sleep(refresh_timeout)
+            session.request(urlparse.urljoin(_BASE_LINK, refresh_url))
 
-        url_cookie = '%s://%s' % (urlparse.urlparse(url).scheme, urlparse.urlparse(url).netloc)
-        cookie = client.request(urlparse.urljoin(url_cookie, refresh_url), headers=rheaders, output='cookie')
-
-    return client.request(url, headers=rheaders, cookie=cookie)
+        return session.request(url).content
