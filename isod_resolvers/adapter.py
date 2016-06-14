@@ -18,6 +18,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+
 import os
 import re
 
@@ -81,5 +82,6 @@ def info(paths):
 
 def resolve(module, url):
     urls = getattr(__import__(_SOD_ADDON_SERVERS_PACKAGE, globals(), locals(), [module[2]], -1), module[2]).get_video_url(url)
-
+    # (fixme) the url resolution might return multiple urls with different stream quality,
+    # this should be handled in the resolvers.resolve.
     return None if not urls else urls[0][1]
