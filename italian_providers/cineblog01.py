@@ -31,14 +31,14 @@ from g2.libraries import client2
 from .lib import jsunpack
 
 
-_BASE_LINK = 'http://www.cb01.co'
-_SEARCH_LINK = '/?s=%s'
+_BASE_URL = 'http://www.cb01.co'
+_SEARCH_QUERY = '/?s=%s'
 
 
 def get_movie(dummy_module, title, year=None, **dummy_kwargs):
     title = title.translate(None, ':') # cb01 doesn't like the semicolons in the titles
-    query = _SEARCH_LINK % urllib.quote_plus('%s (%s)' % (title, year) if year else title)
-    query = urlparse.urljoin(_BASE_LINK, query)
+    query = _SEARCH_QUERY % urllib.quote_plus('%s (%s)' % (title, year) if year else title)
+    query = urlparse.urljoin(_BASE_URL, query)
 
     result = _cloudflare(query)
 
@@ -138,6 +138,6 @@ def _cloudflare(url):
             refresh_timeout = int(res.headers['refresh'][:1])
             refresh_url = res.headers['refresh'][6:]
             time.sleep(refresh_timeout)
-            session.request(urlparse.urljoin(_BASE_LINK, refresh_url))
+            session.request(urlparse.urljoin(_BASE_URL, refresh_url))
 
         return session.request(url).content
