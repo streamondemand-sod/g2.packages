@@ -23,24 +23,25 @@ import re
 
 import urlresolver
 
+from g2.libraries import log
+
 
 def info(dummy_paths):
     try:
-        resolvers = urlresolver.plugnplay.man.implementors(urlresolver.UrlResolver)
-    except Exception:
-        resolvers = []
+        resolvers = urlresolver.relevant_resolvers(include_universal=True, include_external=True)
+        # resolvers = urlresolver.plugnplay.man.implementors(urlresolver.UrlResolver)
+    except Exception as ex:
+        log.error('{p}.{f}: %s', repr(ex))
+        return []
 
     nfo = []
     for res in resolvers:
-        try:
-            module = res.fname if isinstance(res, urlresolver.plugnplay.interfaces.UrlWrapper) else \
-            		 re.search(r'<([^\.]+)\.', str(res)).group(1)
-            nfo.append({
-                'name': module,
-                'domains': res.domains,
-            })
-        except Exception:
-            pass
+        nfo.append({
+            'name': res.name,
+            'domains': res.domains,
+        })
+        log.debug('{p}.{f}: resolver %s: %s', res.name, res.domains)
+
     return nfo
 
 
