@@ -21,7 +21,7 @@
 
 
 from g2.libraries import log
-from g2.libraries import client2
+from g2.libraries import client
 
 
 _log_debug = True
@@ -32,9 +32,9 @@ info = {
 
 
 def resolve(module, url):
-    res = client2.get(url)
+    res = client.get(url)
 
-    video = client2.parseDOM(res.content, 'video', attrs={'id':'bcPlayer'}, ret=['data-account', 'data-video-id'])[0]
+    video = client.parseDOM(res.content, 'video', attrs={'id':'bcPlayer'}, ret=['data-account', 'data-video-id'])[0]
 
     url = 'https://edge.api.brightcove.com/playback/v1/accounts/{data_account}/videos/{data_video_id}'.format(
         data_account=video['data-account'][0],
@@ -43,7 +43,7 @@ def resolve(module, url):
     headers = {
         'Accept': 'application/json;pk=BCpkADawqM0xNxj2Rs11iwmFoNJoG2nXUQs67brI7oR2qm0Dwn__kPcbvLJb7M34IY2ar-WxWvi8wHr6cRbP7nmgilWaDrqZEeQm4O5K6z6B2A3afiPFbv7T4LcsQKN2PqIIgIIr3AXq43vL',
     }
-    res = client2.get(url, headers=headers).json()
+    res = client.get(url, headers=headers).json()
 
     # Filter out the sources without src link
     sources = sorted(res['sources'], key=lambda i: i.get('avg_bitrate', 0)*(1 if i.get('src') else 0), reverse=True)

@@ -23,7 +23,7 @@ import urlparse
 
 from unidecode import unidecode
 
-from g2.libraries import client2
+from g2.libraries import client
 
 
 _BASE_LINK = 'http://www.filmsenzalimiti.co'
@@ -34,11 +34,11 @@ def get_movie(dummy_module, title, **dummy_kwargs):
     query = _SEARCH_LINK % urllib.quote_plus(title)
     query = urlparse.urljoin(_BASE_LINK, query)
 
-    result = client2.request(query).content
-    result = client2.parseDOM(result, 'div', attrs={'class': 'post-item-side'})[0]
-    urls = client2.parseDOM(result, 'a', ret='href')
-    titles = client2.parseDOM(result, 'img', attrs={'class': 'post-side-img'}, ret='title')
-    titles = [unidecode(client2.replaceHTMLCodes(t)) for t in titles]
+    result = client.request(query).content
+    result = client.parseDOM(result, 'div', attrs={'class': 'post-item-side'})[0]
+    urls = client.parseDOM(result, 'a', ret='href')
+    titles = client.parseDOM(result, 'img', attrs={'class': 'post-side-img'}, ret='title')
+    titles = [unidecode(client.replaceHTMLCodes(t)) for t in titles]
 
     return zip(urls, titles)
 
@@ -46,26 +46,26 @@ def get_movie(dummy_module, title, **dummy_kwargs):
 def get_sources(dummy_module, ref):
     url, title = ref
 
-    result = client2.request(url).content
+    result = client.request(url).content
     # result = result.decode('iso-8859-1').encode('utf-8')
-    result = client2.parseDOM(result, 'ul', attrs={'class': 'host'})[1]
+    result = client.parseDOM(result, 'ul', attrs={'class': 'host'})[1]
 
     # E.g. <span class="b"><img src="http://imagerip.net/images/2015/08/14/rapidvideo.png"
     #       alt="Rapidvideo" height="10"> Rapidvideo</span>
-    names = [client2.parseDOM(i, 'img', ret='alt')[0] for i in client2.parseDOM(result, 'span', attrs={'class': 'b'})]
+    names = [client.parseDOM(i, 'img', ret='alt')[0] for i in client.parseDOM(result, 'span', attrs={'class': 'b'})]
 
     # E.g. <a href="http://www.rapidvideo.org/eskf5x2cqghi/Deadpool.2016.iTALiAN.MD.TS.XviD-iNCOMiNG.avi.html"
     #       rel="nofollow" target="_blank" class="external">
-    urls = client2.parseDOM(result, 'a', attrs={'class': 'external'}, ret='href')
+    urls = client.parseDOM(result, 'a', attrs={'class': 'external'}, ret='href')
 
     # E.g. <span class="a"><i class="fa fa-circle-o fa-lg"></i> Streaming</span>
-    actions = client2.parseDOM(result, 'span', attrs={'class': 'a'})
+    actions = client.parseDOM(result, 'span', attrs={'class': 'a'})
 
     # E.g. <span class="d">360p</span>
-    qualities = client2.parseDOM(result, 'span', attrs={'class': 'd'})
+    qualities = client.parseDOM(result, 'span', attrs={'class': 'd'})
 
     # E.g. <a href="http://www.filmsenzalimiti.co/genere/subita" rel="category tag">Film Sub Ita</a>
-    info = client2.parseDOM(result, 'a', attrs={'rel': r'category\s+tag'})
+    info = client.parseDOM(result, 'a', attrs={'rel': r'category\s+tag'})
 
     sources = []
     for name, url, action, quality in zip(names, urls, actions, qualities):

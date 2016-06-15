@@ -23,7 +23,7 @@ import re
 import urllib
 
 from g2.libraries import log
-from g2.libraries import client2
+from g2.libraries import client
 from g2.libraries import workers
 from g2.libraries import platform
 from g2.libraries import language
@@ -61,9 +61,9 @@ def resolve(kind=None, **kwargs):
 
 
 def movies(url):
-    result = client2.get(url).content
-    results = client2.parseDOM(result, 'div', attrs={'class': 'post'})
-    results = [(client2.parseDOM(i, 'a', attrs={'class': 'p-title.*?'}),
+    result = client.get(url).content
+    results = client.parseDOM(result, 'div', attrs={'class': 'post'})
+    results = [(client.parseDOM(i, 'a', attrs={'class': 'p-title.*?'}),
                 re.compile(r'(\d{4}-\d{2}-\d{2})').findall(i)) for i in results]
     results = [(i[0][0], i[1][0]) for i in results if len(i[0]) > 0 and len(i[1]) > 0]
     results = [(re.sub(r'(\.|\(|\[|\s)(\d{4}|S\d*E\d*|3D)(\.|\)|\]|\s)(.+)', '', i[0]),
@@ -94,7 +94,7 @@ def movies(url):
         next_page = page + 1
         next_url = url.replace('&page=%d'%page, '&page=%d'%next_page)
         try:
-            max_pages = int(client2.parseDOM('a', attrs={'class': 'page-button last-page'}).split(' ')[0])
+            max_pages = int(client.parseDOM('a', attrs={'class': 'page-button last-page'}).split(' ')[0])
         except Exception:
             max_pages = 0
     except Exception:

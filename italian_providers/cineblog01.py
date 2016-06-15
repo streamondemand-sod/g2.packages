@@ -26,7 +26,7 @@ import unidecode
 
 from unidecode import unidecode
 
-from g2.libraries import client2
+from g2.libraries import client
 
 from .lib import jsunpack
 
@@ -43,9 +43,9 @@ def get_movie(dummy_module, title, year=None, **dummy_kwargs):
     result = _cloudflare(query)
 
     result = result.decode('iso-8859-1').encode('utf-8')
-    result = client2.parseDOM(result, 'div', attrs={'class': 'span12 filmbox'})
-    result = [(client2.parseDOM(i, 'a', ret='href')[0], client2.parseDOM(i, 'h1')[0]) for i in result]
-    result = [(u, unidecode(client2.replaceHTMLCodes(t))) for u, t in result]
+    result = client.parseDOM(result, 'div', attrs={'class': 'span12 filmbox'})
+    result = [(client.parseDOM(i, 'a', ret='href')[0], client.parseDOM(i, 'h1')[0]) for i in result]
+    result = [(u, unidecode(client.replaceHTMLCodes(t))) for u, t in result]
 
     return [i for i in result
             if not re.search(r'\(\d{4}\)', i[1])
@@ -55,11 +55,11 @@ def get_movie(dummy_module, title, year=None, **dummy_kwargs):
 def get_sources(dummy_module, ref):
     url, title = ref
 
-    result = client2.request(url).content
-    result = client2.parseDOM(result, 'table', attrs={})
+    result = client.request(url).content
+    result = client.parseDOM(result, 'table', attrs={})
     result = [t for t in result if 'Streaming:' in t][0]
-    result = client2.parseDOM(result, 'td', attrs={})
-    result = reduce(lambda x, y: x+y, [client2.parseDOM(t, 'td', attrs={}) for t in result], [])
+    result = client.parseDOM(result, 'td', attrs={})
+    result = reduce(lambda x, y: x+y, [client.parseDOM(t, 'td', attrs={}) for t in result], [])
 
     sources = []
     quality = 'SD'
@@ -76,17 +76,17 @@ def get_sources(dummy_module, ref):
 
         else:
             try:
-                divs = client2.parseDOM(tdi, 'div', attrs={'align': 'right'})
+                divs = client.parseDOM(tdi, 'div', attrs={'align': 'right'})
                 if divs:
-                    nfo = client2.parseDOM(divs[0], 'strong')[0]
+                    nfo = client.parseDOM(divs[0], 'strong')[0]
                     nfo = re.sub(r'<a.*?</a>', '', nfo)
-                    info.append(unidecode(client2.replaceHTMLCodes(nfo)).strip())
+                    info.append(unidecode(client.replaceHTMLCodes(nfo)).strip())
 
                 elif sources_area:
-                    url = client2.parseDOM(tdi, 'a', ret='href')[0]
-                    host = client2.parseDOM(tdi, 'a')[0]
+                    url = client.parseDOM(tdi, 'a', ret='href')[0]
+                    host = client.parseDOM(tdi, 'a')[0]
                     sources.append({
-                        'source': unidecode(client2.replaceHTMLCodes(host)),
+                        'source': unidecode(client.replaceHTMLCodes(host)),
                         'quality': quality,
                         'url': url,
                     })
@@ -100,9 +100,9 @@ def get_sources(dummy_module, ref):
 
 
 def resolve(dummy_module, url):
-    result = client2.request(url).content if not 'go.php' in url else _cloudflare(url)
+    result = client.request(url).content if not 'go.php' in url else _cloudflare(url)
 
-    scripts = client2.parseDOM(result, 'script')
+    scripts = client.parseDOM(result, 'script')
     rurl = None
     for i in scripts:
         match = re.search(r'(eval\(function\(p,a,c,k,e,d.*)', i)
@@ -120,7 +120,7 @@ def resolve(dummy_module, url):
             break
 
     if not rurl:
-        rurl = client2.parseDOM(result, 'a', attrs={'class': 'btn-wrapper'}, ret='href')[0]
+        rurl = client.parseDOM(result, 'a', attrs={'class': 'btn-wrapper'}, ret='href')[0]
 
     return rurl
 
@@ -130,7 +130,7 @@ def _cloudflare(url):
         'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; rv:38.0) Gecko/20100101 Firefox/38.0',
     }
 
-    with client2.Session(headers=headers) as session:
+    with client.Session(headers=headers) as session:
         res = session.request(url)
 
         if 'refresh' in res.headers:
