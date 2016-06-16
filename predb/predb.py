@@ -80,7 +80,7 @@ def movies(url):
             title, year = title_year
             item = dbs.movies('movies{title}{year}', title=title, year=year)
             if not item:
-                log.debug('{m}.{f}: %s (%s): no matching movies', title_year)
+                log.debug('{m}.{f}: %s (%s): no matching movies', title, year)
             else:
                 # (fixme) a fuzzy logic should be used here to match the best result in item
                 item[0]['position'] = i
