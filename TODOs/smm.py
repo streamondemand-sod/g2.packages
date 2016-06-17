@@ -26,14 +26,10 @@ from libraries import log
 from metahandler import metahandlers
 
 
-_log_debug = True
-_log_trace_on_error = True
-
 info = {
     'domains': [],
     'methods': ['url', 'watched'],
 }
-
 
 _urls = {
     'watched.movie{imdb_id}': 'movie.imdb.{imdb_id}',

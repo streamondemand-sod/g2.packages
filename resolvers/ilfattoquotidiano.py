@@ -24,14 +24,12 @@ from g2.libraries import log
 from g2.libraries import client
 
 
-_log_debug = True
-
 info = {
     'domains': ['ilfattoquotidiano.it'],
 }
 
 
-def resolve(module, url):
+def resolve(dummy_module, url):
     res = client.get(url)
 
     video = client.parseDOM(res.content, 'video', attrs={'id':'bcPlayer'}, ret=['data-account', 'data-video-id'])[0]
@@ -41,7 +39,10 @@ def resolve(module, url):
         data_video_id=video['data-video-id'][0],
     )
     headers = {
-        'Accept': 'application/json;pk=BCpkADawqM0xNxj2Rs11iwmFoNJoG2nXUQs67brI7oR2qm0Dwn__kPcbvLJb7M34IY2ar-WxWvi8wHr6cRbP7nmgilWaDrqZEeQm4O5K6z6B2A3afiPFbv7T4LcsQKN2PqIIgIIr3AXq43vL',
+        'Accept': ('application/json;pk='
+                   'BCpkADawqM0xNxj2Rs11iwmFoNJoG2nXUQs67brI7oR2qm0Dwn__'
+                   'kPcbvLJb7M34IY2ar-WxWvi8wHr6cRbP7nmgilWaDrqZEeQm4O5K'
+                   '6z6B2A3afiPFbv7T4LcsQKN2PqIIgIIr3AXq43vL'),
     }
     res = client.get(url, headers=headers).json()
 

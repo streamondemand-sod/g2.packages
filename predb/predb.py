@@ -30,15 +30,11 @@ from g2.libraries import language
 from g2 import dbs
 
 
-_log_debug = True
-
-
 info = {
     'priority': 9,
     'domains': ['predb.me'],
     'methods': ['resolve', 'movies'],
 }
-
 
 _INFO_LANG = platform.setting('infoLang') or 'en'
 
