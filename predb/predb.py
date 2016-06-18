@@ -90,7 +90,7 @@ def movies(url):
         next_page = page + 1
         next_url = url.replace('&page=%d'%page, '&page=%d'%next_page)
         try:
-            max_pages = int(client.parseDOM(result, 'a', attrs={'class': 'page-button last-page'}).split(' ')[0])
+            max_pages = int(client.parseDOM(result, 'a', attrs={'class': 'page-button last-page'})[0].split(' ')[0])
         except Exception as ex:
             log.debug('{m}.{f}: %s: %s', url.replace(_BASE_URL, ''), repr(ex))
     except Exception as ex:
