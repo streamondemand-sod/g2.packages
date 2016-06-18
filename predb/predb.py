@@ -110,6 +110,7 @@ def movies(url):
     for i in items:
         i['next_url'] = next_url
         i['next_page'] = next_page
+        i['max_pages'] = max_pages
 
     items = sorted(items, key=lambda x: x['position'])
 
