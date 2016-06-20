@@ -27,9 +27,6 @@ import importer
 from g2.libraries import log
 
 
-# _log_debug = True
-# _log_trace_on_error = True
-
 _SOD_ADDON_SERVERS_PACKAGE = 'servers'
 
 _EXCLUDED_SERVERS = [

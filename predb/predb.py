@@ -57,6 +57,7 @@ def resolve(kind=None, **kwargs):
 
 
 def movies(url):
+    url, timeout = url.split('|')[0:2]
     result = client.get(url).content
     results = client.parseDOM(result, 'div', attrs={'class': 'post'})
     results = [(client.parseDOM(i, 'a', attrs={'class': 'p-title.*?'}),
@@ -88,7 +89,7 @@ def movies(url):
     try:
         page = int(re.search(r'&page=(\d+)', url).group(1))
         next_page = page + 1
-        next_url = url.replace('&page=%d'%page, '&page=%d'%next_page)
+        next_url = url.replace('&page=%d'%page, '&page=%d'%next_page) + ('' if not timeout else '|'+timeout)
         try:
             max_pages = int(client.parseDOM(result, 'a', attrs={'class': 'page-button last-page'})[0].split(' ')[0])
         except Exception as ex:
