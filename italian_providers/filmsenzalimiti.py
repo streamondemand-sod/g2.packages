@@ -35,19 +35,19 @@ def get_movie(dummy_module, title, **dummy_kwargs):
     query = urlparse.urljoin(_BASE_LINK, query)
 
     result = client.request(query).content
-    result = client.parseDOM(result, 'div', attrs={'class': 'post-item-side'})[0]
-    urls = client.parseDOM(result, 'a', ret='href')
-    titles = client.parseDOM(result, 'img', attrs={'class': 'post-side-img'}, ret='title')
-    titles = [unidecode(client.replaceHTMLCodes(t)) for t in titles]
+    result = result.decode('iso-8859-1').encode('utf-8')
 
-    return zip(urls, titles)
+    result = client.parseDOM(result, 'div', attrs={'class': 'post-item-side'})
+
+    return [(client.parseDOM(i, 'a', ret='href')[0], client.parseDOM(i, 'img', ret='title')[0]) for i in result]
 
 
 def get_sources(dummy_module, ref):
     url, title = ref
 
     result = client.request(url).content
-    # result = result.decode('iso-8859-1').encode('utf-8')
+    result = result.decode('iso-8859-1').encode('utf-8')
+
     result = client.parseDOM(result, 'ul', attrs={'class': 'host'})[1]
 
     # E.g. <span class="b"><img src="http://imagerip.net/images/2015/08/14/rapidvideo.png"
