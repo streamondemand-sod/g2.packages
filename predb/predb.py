@@ -23,9 +23,9 @@ import re
 import urllib
 
 from g2.libraries import log
+from g2.libraries import addon
 from g2.libraries import client
 from g2.libraries import workers
-from g2.libraries import platform
 from g2.libraries import language
 from g2 import dbs
 
@@ -36,7 +36,7 @@ info = {
     'methods': ['resolve', 'movies'],
 }
 
-_INFO_LANG = platform.setting('infoLang') or 'en'
+_INFO_LANG = addon.setting('infoLang') or 'en'
 
 _BASE_URL = 'http://predb.me'
 _URLS = {
