@@ -35,8 +35,22 @@ _BASE_URL = 'http://www.cb01.co'
 _SEARCH_QUERY = '/?s=%s'
 
 
-def get_movie(dummy_module, title, year=None, **dummy_kwargs):
+def get_movie(dummy_module, title, year='0', **dummy_kwargs):
     title = title.translate(None, ':') # cb01 doesn't like the semicolons in the titles
+
+    # (fixme) alternative is to use year only when the title is a single word...
+    try:
+        year = int(year)
+    except Exception:
+        year = 0
+    items = _get_movie(title, year)
+    if not items and year:
+        items = _get_movie(title, year-1)
+
+    return items
+
+
+def _get_movie(title, year):
     query = _SEARCH_QUERY % urllib.quote_plus('%s (%s)' % (title, year) if year else title)
     query = urlparse.urljoin(_BASE_URL, query)
 
@@ -49,7 +63,7 @@ def get_movie(dummy_module, title, year=None, **dummy_kwargs):
 
     return [i for i in result
             if not re.search(r'\(\d{4}\)', i[1])
-            or any(x in i[1] for x in ['(%s)'%str(y) for y in range(int(year)-1, int(year)+2)])]
+            or any(x in i[1] for x in ['(%s)'%str(y) for y in range(year-1, year+2)])]
 
 
 def get_sources(dummy_module, ref):
