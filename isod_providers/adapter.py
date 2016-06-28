@@ -31,12 +31,9 @@ from g2.libraries import log
 
 _SOD_ADDON_CHANNELS_PACKAGE = 'channels'
 
-_EXCLUDED_CHANNELS = [
-    'biblioteca',       # global search channel
-    'buscador',         # global search channel
+_DEFAULT_EXCLUDED_CHANNELS = [
     'corsaronero',      # torrent only
     'mondolunatico',    # fire up a captcha dialog
-    'tengourl',         # not a title search channel
 ]
 
 _CHANNELS_OPTIONS = {
@@ -58,9 +55,18 @@ def info(paths):
     from core import logger
     logger.log_enable(False)
 
+    excluded_channels = _DEFAULT_EXCLUDED_CHANNELS
+    try:
+        sodsearch_path = os.path.join(paths[0], 'resources', 'sodsearch.txt')
+        with open(sodsearch_path) as fil:
+            excluded_channels.extend(fil.readlines())
+    except Exception as ex:
+        log.notice('{p}: %s: %s', sodsearch_path, repr(ex))
+    excluded_channels = [ec.strip() for ec in excluded_channels if ec.strip()]
+
     nfo = []
     for dummy_package, channel, is_pkg in importer.walk_packages([os.path.join(paths[0], _SOD_ADDON_CHANNELS_PACKAGE)]):
-        if is_pkg or channel in _EXCLUDED_CHANNELS:
+        if is_pkg or channel in excluded_channels:
             continue
         try:
             mod = getattr(__import__(_SOD_ADDON_CHANNELS_PACKAGE, globals(), locals(), [channel], -1), channel)
