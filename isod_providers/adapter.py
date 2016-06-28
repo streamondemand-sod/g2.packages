@@ -35,6 +35,7 @@ _EXCLUDED_CHANNELS = [
     'biblioteca',       # global search channel
     'buscador',         # global search channel
     'corsaronero',      # torrent only
+    'mondolunatico',    # fire up a captcha dialog
     'tengourl',         # not a title search channel
 ]
 
