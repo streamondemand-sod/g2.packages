@@ -63,6 +63,11 @@ def info(paths):
             try:
                 if re.compile(pat):
                     url_patterns.append(pat)
+                try:
+                    url_top_level_domain = re.match(r'(https?://[\w\.]+)', pat).group(1)
+                    url_patterns.append(url_top_level_domain)
+                except Exception:
+                    pass
             except Exception as ex:
                 log.notice('{p}.{f}: %s: invalid pattern: %s', pat, ex)
 
