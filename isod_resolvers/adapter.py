@@ -39,6 +39,10 @@ def info(paths):
     from core import logger
     logger.log_enable(False)
 
+    # (fixme) this should be checked against the ISOD default.py module, but, for now,
+    # let's have it hardcoded
+    paths.append(os.path.join(paths[0], 'lib'))
+
     nfo = []
     for package, module, is_pkg in importer.walk_packages([os.path.join(paths[0], _SOD_ADDON_SERVERS_PACKAGE)]):
         if is_pkg or module in _EXCLUDED_SERVERS:

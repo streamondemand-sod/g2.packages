@@ -55,6 +55,10 @@ def info(paths):
     from core import logger
     logger.log_enable(False)
 
+    # (fixme) this should be checked against the ISOD default.py module, but, for now,
+    # let's have it hardcoded
+    paths.append(os.path.join(paths[0], 'lib'))
+
     excluded_channels = _DEFAULT_EXCLUDED_CHANNELS
     try:
         sodsearch_path = os.path.join(paths[0], 'resources', 'sodsearch.txt')
