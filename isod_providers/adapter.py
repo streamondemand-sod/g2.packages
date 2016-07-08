@@ -37,13 +37,61 @@ _DEFAULT_EXCLUDED_CHANNELS = [
 ]
 
 _CHANNELS_OPTIONS = {
+    'casacinema': {
+        'content': ['movie', 'episode'],
+    },
     'cineblog01': {
         'remove_chars': ':',
         'use_year': ' (%s)',
         'source_quality_override': True,
         'ignore_tags': ['Streaming HD:', 'Streaming:'],
+        'content': ['movie', 'episode'],
     },
-    # (fixme) other channels might need custome flags as well...
+    'cinemalibero': {
+        'content': ['movie', 'episode'],
+    },
+    'darkstream': {
+        'content': ['movie', 'episode'],
+    },
+    'eurostreaminginfo': {
+        'content': ['movie', 'episode'],
+    },
+    'filmpertutti': {
+        'content': ['movie', 'episode'],
+    },
+    'filmsenzalimiti': {
+        'content': ['movie', 'episode'],
+    },
+    'filmstreampw': {
+        'content': ['movie', 'episode'],
+    },
+    'filmstream': {
+        'content': ['movie', 'episode'],
+    },
+    'guardarefilm': {
+        'content': ['movie', 'episode'],
+    },
+    'itafilmtv': {
+        'content': ['movie', 'episode'],
+    },
+    'italiafilm': {
+        'content': ['movie', 'episode'],
+    },
+    'italianstream': {
+        'content': ['movie', 'episode'],
+    },
+    'liberoita': {
+        'content': ['movie', 'episode'],
+    },
+    'piratestreaming': {
+        'content': ['movie', 'episode'],
+    },
+    'solostreaming': {
+        'content': ['movie', 'episode'],
+    },
+    'tantifilm': {
+        'content': ['movie', 'episode'],
+    },
 }
 
 
@@ -78,7 +126,10 @@ def info(paths):
             log.error('{m}.{f}: from %s import %s: %s', _SOD_ADDON_CHANNELS_PACKAGE, channel, ex)
             continue
         if hasattr(mod, 'search'):
-            nfo.append({'name': channel})
+            nfo.append({
+                'name': channel,
+                'content': _channel_option(channel, 'content', ['movie']),
+            })
 
     log.notice('{p}: %d channels found', len(nfo))
 
@@ -114,6 +165,38 @@ def get_movie(provider, title, year=None, **kwargs):
     return [(i.url, i.fulltitle, i.action, 'HD' if re.search(r'[^\w]HD[^\w]', i.fulltitle) else 'SD') for i in items]
 
 
+def get_episode(provider, title, **kwargs):
+    from servers import servertools
+    from core.item import Item
+
+    log.debug('{m}.{f}: %s', title)
+
+    try:
+        mod = getattr(__import__(_SOD_ADDON_CHANNELS_PACKAGE, globals(), locals(), [provider[2]], -1), provider[2])
+    except Exception as ex:
+        log.error('{m}.{f}.get_episode(%s, ...): %s', provider[2], ex)
+        return None
+
+    try:
+        if _channel_option(provider[2], 'remove_chars'):
+            title = title.translate(None, _channel_option(provider[2], 'remove_chars'))
+        search_terms = unidecode(title)
+        item = Item()
+        item.extra = 'serie'
+
+        items = mod.search(item, urllib.quote_plus(search_terms))
+        if not items:
+            return None
+    except Exception as ex:
+        log.notice('{m}.{f}.get_episode(%s, %s, ...): %s', provider[2], title, ex)
+        return None
+
+    # (fixme): [(year)] filtering if returned in the title and year is provided
+    # (fixme): [(sub-ita)] filtering if returned in the title and language is provided
+
+    return [(i.url, i.fulltitle, i.action, 'HD' if re.search(r'[^\w]HD[^\w]', i.fulltitle) else 'SD') for i in items]
+
+
 def get_sources(provider, vref):
     from servers import servertools
     from core.item import Item
@@ -137,6 +220,19 @@ def get_sources(provider, vref):
 
     if not sitems:
         log.debug('{m}.{f}.get_sources(%s, ...): no sources found by %s(%s)', provider[2], item.action, item.url)
+
+    nitems = []
+    for i in sitems:
+        if i.action == 'play':
+            nitems.append(i)
+        else:
+            try:
+                nis = getattr(mod, i.action)(i)
+                if nis:
+                    nitems.extend(nis)
+            except Exception as ex:
+                log.notice('{m}.{f}.get_sources(%s, ...): %s: %s', provider[2], i.action, repr(ex))
+    sitems = nitems
 
     sources = {}
     for sitem in sitems:
@@ -163,7 +259,7 @@ def get_sources(provider, vref):
         def collect_color_tags(match):
             tag = match.group(1)
             if tag not in _channel_option(provider[2], 'ignore_tags', []):
-                info_tags.append(tag) #pylint: disable=W0640
+                info_tags.append(tag)
             return ''
 
         stitle = re.sub(r'\[COLOR\s+[^\]]+\]([^\[]*)\[/COLOR\]', collect_color_tags, stitle)
@@ -195,10 +291,11 @@ def get_sources(provider, vref):
             action = pitems[0].action
 
         sources[url] = {
+            'url': url,
             'source': host,
             'quality': quality,
             'info': ('[%s] '%' '.join(info_tags) if info_tags else '')+title,
-            'url': url,
+            'info2': sitem.title,
         }
 
         log.debug('{m}.{f}.get_sources(%s, ...): %s', provider[2], sources[url])
