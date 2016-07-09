@@ -165,7 +165,7 @@ def get_movie(provider, title, year=None, **kwargs):
     return [(i.url, i.fulltitle, i.action, 'HD' if re.search(r'[^\w]HD[^\w]', i.fulltitle) else 'SD') for i in items]
 
 
-def get_episode(provider, title, season, episode, **kwargs):
+def get_episode(provider, tvshowtitle, season, episode, **kwargs):
     from servers import servertools
     from core.item import Item
 
@@ -177,8 +177,8 @@ def get_episode(provider, title, season, episode, **kwargs):
 
     try:
         if _channel_option(provider[2], 'remove_chars'):
-            title = title.translate(None, _channel_option(provider[2], 'remove_chars'))
-        search_terms = unidecode(title)
+            tvshowtitle = tvshowtitle.translate(None, _channel_option(provider[2], 'remove_chars'))
+        search_terms = unidecode(tvshowtitle)
         item = Item()
         item.extra = 'serie'
 
@@ -186,7 +186,7 @@ def get_episode(provider, title, season, episode, **kwargs):
         if not items:
             return None
     except Exception as ex:
-        log.notice('{m}.{f}.get_episode(%s, %s, ...): %s', provider[2], title, ex)
+        log.notice('{m}.{f}.get_episode(%s, %s, ...): %s', provider[2], tvshowtitle, ex)
         return None
 
     if season and episode:
