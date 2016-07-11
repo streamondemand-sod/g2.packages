@@ -159,8 +159,9 @@ def get_movie(provider, title, year=None, **kwargs):
         log.notice('{m}.{f}.get_movie(%s, %s, ...): %s', provider[2], title, ex)
         return None
 
-    # (fixme): [(year)] filtering if returned in the title and year is provided
-    # (fixme): [(sub-ita)] filtering if returned in the title and language is provided
+    for i in items:
+        for tag in ['streaming', 'ita']:
+            i.fulltitle = re.sub(r'(?i)(^|[^\w])%s([^\w]|$)'%tag, r'\1\2', i.fulltitle)
 
     return [(i.url, i.fulltitle, i.action, 'HD' if re.search(r'[^\w]HD[^\w]', i.fulltitle) else 'SD') for i in items]
 
@@ -189,13 +190,9 @@ def get_episode(provider, tvshowtitle, season, episode, **kwargs):
         log.notice('{m}.{f}.get_episode(%s, %s, ...): %s', provider[2], tvshowtitle, ex)
         return None
 
-    if season and episode:
-        for i in items:
-            for tag in ['serie', 'tv']:
-                i.fulltitle = re.sub(r'(?i)(^|[^\w])%s([^\w]|$)'%tag, r'\1\2', i.fulltitle)
-
-    # (fixme): [(year)] filtering if returned in the title and year is provided
-    # (fixme): [(sub-ita)] filtering if returned in the title and language is provided
+    for i in items:
+        for tag in ['streaming', 'ita', 'serie', 'tv']:
+            i.fulltitle = re.sub(r'(?i)(^|[^\w])%s([^\w]|$)'%tag, r'\1\2', i.fulltitle)
 
     return [(i.url, i.fulltitle.strip(), i.action, 'HD' if re.search(r'[^\w]HD[^\w]', i.fulltitle) else 'SD', season, episode)
             for i in items]
