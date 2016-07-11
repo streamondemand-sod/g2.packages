@@ -235,7 +235,7 @@ def get_sources(provider, vref):
     for i in sitems:
         if i.action == 'play':
             nitems.append(i)
-        else:
+        elif hasattr(mod, i.action):
             try:
                 nis = getattr(mod, i.action)(i)
                 if nis:
