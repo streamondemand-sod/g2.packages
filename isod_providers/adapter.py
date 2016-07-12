@@ -37,14 +37,11 @@ _DEFAULT_EXCLUDED_CHANNELS = [
 ]
 
 _CHANNELS_OPTIONS = {
-    'casacinema': {
-        'content': ['movie', 'episode'],
-    },
     'cineblog01': {
         'remove_chars': ':',
         'use_year': ' (%s)',
         'source_quality_override': True,
-        'ignore_tags': ['Streaming HD:', 'Streaming:'],
+        'ignore_info_tags': ['Streaming HD:', 'Streaming:'],
         'content': ['movie'], # bad series scraper...
     },
     'cinemalibero': {
@@ -56,9 +53,6 @@ _CHANNELS_OPTIONS = {
     'eurostreaminginfo': {
         'content': ['movie'], # bad series scraper...
     },
-    'filmpertutti': {
-        'content': ['movie', 'episode'],
-    },
     'filmsenzalimiti': {
         'content': ['movie'], # bad series scraper...
     },
@@ -68,29 +62,8 @@ _CHANNELS_OPTIONS = {
     'filmstream': {
         'content': ['movie'], # bad series scraper...
     },
-    'guardarefilm': {
-        'content': ['movie', 'episode'],
-    },
-    'itafilmtv': {
-        'content': ['movie', 'episode'],
-    },
-    'italiafilm': {
-        'content': ['movie', 'episode'],
-    },
     'italianstream': {
         'content': ['movie'], # bad series scraper...
-    },
-    'liberoita': {
-        'content': ['movie', 'episode'],
-    },
-    'piratestreaming': {
-        'content': ['movie', 'episode'],
-    },
-    'solostreaming': {
-        'content': ['movie', 'episode'],
-    },
-    'tantifilm': {
-        'content': ['movie', 'episode'],
     },
 }
 
@@ -139,55 +112,58 @@ def info(paths):
 def get_movie(provider, title, year=None, **kwargs):
     from servers import servertools
     from core.item import Item
+    from core import logger
+    logger.log_enable(False)
 
     try:
         mod = getattr(__import__(_SOD_ADDON_CHANNELS_PACKAGE, globals(), locals(), [provider[2]], -1), provider[2])
     except Exception as ex:
-        log.error('{m}.{f}.get_movie(%s, ...): %s', provider[2], ex)
+        log.error('{m}.{f}.%s: %s', provider[2], ex)
         return None
 
     try:
+        title = unidecode(title)
         if _channel_option(provider[2], 'remove_chars'):
             title = title.translate(None, _channel_option(provider[2], 'remove_chars'))
-        search_terms = unidecode(title)
+        search_terms = title
         if year and _channel_option(provider[2], 'use_year'):
             search_terms += _channel_option(provider[2], 'use_year') % year
         items = mod.search(Item(), urllib.quote_plus(search_terms))
         if not items:
-            return None
+            raise Exception('movie not found')
     except Exception as ex:
-        log.notice('{m}.{f}.get_movie(%s, %s, ...): %s', provider[2], title, ex)
+        log.notice('{m}.{f}.%s: %s: %s', provider[2], title, repr(ex))
         return None
 
     for i in items:
         for tag in ['streaming', 'ita']:
             i.fulltitle = re.sub(r'(?i)(^|[^\w])%s([^\w]|$)'%tag, r'\1\2', i.fulltitle)
 
-    return [(i.url, i.fulltitle, i.action, 'HD' if re.search(r'[^\w]HD[^\w]', i.fulltitle) else 'SD') for i in items]
+    return [(i.url, i.fulltitle.strip(), i.action, 'HD' if re.search(r'[^\w]HD[^\w]', i.fulltitle) else 'SD') for i in items]
 
 
 def get_episode(provider, tvshowtitle, season, episode, **kwargs):
     from servers import servertools
     from core.item import Item
+    from core import logger
+    logger.log_enable(False)
 
     try:
         mod = getattr(__import__(_SOD_ADDON_CHANNELS_PACKAGE, globals(), locals(), [provider[2]], -1), provider[2])
     except Exception as ex:
-        log.error('{m}.{f}.get_episode(%s, ...): %s', provider[2], ex)
+        log.error('{m}.{f}.%s: %s', provider[2], repr(ex))
         return None
 
     try:
+        tvshowtitle = unidecode(tvshowtitle)
         if _channel_option(provider[2], 'remove_chars'):
             tvshowtitle = tvshowtitle.translate(None, _channel_option(provider[2], 'remove_chars'))
-        search_terms = unidecode(tvshowtitle)
-        item = Item()
-        item.extra = 'serie'
-
-        items = mod.search(item, urllib.quote_plus(search_terms))
+        search_terms = tvshowtitle
+        items = mod.search(Item(extra='serie'), urllib.quote_plus(search_terms))
         if not items:
-            return None
+            raise Exception('tvshow not found')
     except Exception as ex:
-        log.notice('{m}.{f}.get_episode(%s, %s, ...): %s', provider[2], tvshowtitle, ex)
+        log.notice('{m}.{f}.%s: %s: %s', provider[2], tvshowtitle, repr(ex))
         return None
 
     for i in items:
@@ -268,7 +244,7 @@ def get_sources(provider, vref):
         info_tags = []
         def collect_color_tags(match):
             tag = match.group(1).strip()
-            if tag and tag not in _channel_option(provider[2], 'ignore_tags', []):
+            if tag and tag not in _channel_option(provider[2], 'ignore_info_tags', []):
                 info_tags.append(tag.decode('utf-8'))
             return ''
 
@@ -304,24 +280,29 @@ def get_sources(provider, vref):
         sitem.fulltitle = sitem.fulltitle.decode('utf-8').strip()
         if not info_tags:
             info_tags = [sitem.title, sitem.fulltitle]
+        else:
+            info_tags.append(title.decode('utf-8'))
 
         source = {
             'url': url,
             'source': host,
             'quality': quality,
-            'info': ('[%s] '%' '.join(info_tags) if info_tags else '') + title,
+            'info': ' '.join(info_tags),
         }
 
         # (fixme): filter SUB ITA vs ITA
 
         if season and episode:
+            # Extract from the info tags or titles the season and episode number
             for nfo in [source['info'], sitem.title, sitem.fulltitle]:
                 match = re.search(r'[^\d]?(\d)x(\d{1,2})[^\d]', unidecode(nfo))
                 if match:
                     break
+            if not match:
+                continue
             source.update({
-                'season': '0' if not match else str(int(match.group(1))),
-                'episode': '0' if not match else str(int(match.group(2))),
+                'season': str(int(match.group(1))),
+                'episode': str(int(match.group(2))),
                 })
 
         sources[url] = source
