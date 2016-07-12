@@ -33,7 +33,7 @@ _SOD_ADDON_CHANNELS_PACKAGE = 'channels'
 
 _DEFAULT_EXCLUDED_CHANNELS = [
     'corsaronero',      # torrent only
-    'mondolunatico',    # fire up a captcha dialog
+    'mondolunatico',    # sometimes it fires up a captcha dialog
 ]
 
 _CHANNELS_OPTIONS = {
@@ -42,28 +42,55 @@ _CHANNELS_OPTIONS = {
         'use_year': ' (%s)',
         'source_quality_override': True,
         'ignore_info_tags': ['Streaming HD:', 'Streaming:'],
-        'content': ['movie'], # bad series scraper...
+        'content': ['movie'], # scraper fails anti-cloudflare on serietv search
+    },
+    'casacinema': {
+        'content': ['movie', 'episode'],
     },
     'cinemalibero': {
-        'content': ['movie'], # bad series scraper...
+        'content': ['movie'], # search fails to return existing series
     },
     'darkstream': {
-        'content': ['movie'], # bad series scraper...
+        'content': ['movie'], # scraper fails to retrieve the sources (it is the same as movie!)
     },
     'eurostreaminginfo': {
-        'content': ['movie'], # bad series scraper...
+        'content': ['movie'], # scraper fails to retrieve the sources (it is the same as movie!)
+    },
+    'filmpertutti': {
+        'content': ['movie', 'episode'],
     },
     'filmsenzalimiti': {
-        'content': ['movie'], # bad series scraper...
-    },
-    'filmstreampw': {
-        'content': ['movie'], # bad series scraper...
+        'content': ['movie'], # scraper return a small subset of the episodes
     },
     'filmstream': {
-        'content': ['movie'], # bad series scraper...
+        'content': ['movie'], # scraper return a small subset of the episodes
+    },
+    'filmstreampw': {
+        'content': ['movie'], # likely fake content
+    },
+    'guardarefilm': {
+        'content': ['movie', 'episode'],
+    },
+    'itafilmtv': {
+        'content': ['movie'], # scraper fails to retrieve the sources
+    },
+    'italiafilm': {
+        'content': ['movie', 'episode'],
     },
     'italianstream': {
-        'content': ['movie'], # bad series scraper...
+        'content': ['movie', 'episode'],
+    },
+    'liberoita': {
+        'content': ['movie', 'episode'],
+    },
+    'piratestreaming': {
+        'content': ['movie', 'episode'],
+    },
+    'solostreaming': {
+        'content': ['movie', 'episode'],
+    },
+    'tantifilm': {
+        'content': ['movie', 'episode'],
     },
 }
 
