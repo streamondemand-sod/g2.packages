@@ -26,32 +26,47 @@ import unidecode
 
 from unidecode import unidecode
 
+from g2.libraries import log
 from g2.libraries import client
 
 from .lib import jsunpack
 
 
 _BASE_URL = 'http://www.cb01.co'
-_SEARCH_QUERY = '/?s=%s'
+_SEARCH_MOVIE_QUERY = '/?s=%s'
+_SEARCH_TVSHOW_QUERY = '/serietv/?s=%s'
 
 
 def get_movie(dummy_module, title, year='0', **dummy_kwargs):
-    title = title.translate(None, ':') # cb01 doesn't like the semicolons in the titles
+    # cb01 search module doesn't like the semicolons in the titles
+    title = unidecode(title).translate(None, ':')
 
-    # (fixme) alternative is to use year only when the title is a single word...
     try:
         year = int(year)
     except Exception:
         year = 0
-    items = _get_movie(title, year)
+
+    # (fixme) alternative is to use year only when the title is a single word...
+    items = _do_search(_SEARCH_MOVIE_QUERY, title, year)
     if not items and year:
-        items = _get_movie(title, year-1)
+        items = _do_search(_SEARCH_MOVIE_QUERY, title, year-1)
 
     return items
 
 
-def _get_movie(title, year):
-    query = _SEARCH_QUERY % urllib.quote_plus('%s (%s)' % (title, year) if year else title)
+def get_episode(dummy_module, tvshowtitle, season, episode, **dummy_kwargs):
+    # cb01 search module doesn't like the semicolons in the titles
+    tvshowtitle = unidecode(tvshowtitle).translate(None, ':')
+
+    items = _do_search(_SEARCH_TVSHOW_QUERY, tvshowtitle)
+    for i in range(len(items)):
+        items[i] += (season, episode,)
+
+    return items
+
+
+def _do_search(query, title, year=None):
+    query = query % urllib.quote_plus('%s (%s)' % (title, year) if year else title)
     query = urlparse.urljoin(_BASE_URL, query)
 
     result = _cloudflare(query)
@@ -66,9 +81,16 @@ def _get_movie(title, year):
             or any(x in i[1] for x in ['(%s)'%str(y) for y in range(year-1, year+2)])]
 
 
-def get_sources(dummy_module, ref):
-    url, title = ref
+def get_sources(dummy_module, vref):
+    if len(vref) == 2:
+        return _get_movie_sources(*vref)
+    elif len(vref) == 4:
+        return _get_episode_sources(*vref)
+    else:
+        return []
 
+
+def _get_movie_sources(url, title):
     result = client.request(url).content
     result = client.parseDOM(result, 'table', attrs={})
     result = [t for t in result if 'Streaming:' in t][0]
@@ -113,6 +135,90 @@ def get_sources(dummy_module, ref):
     return sources
 
 
+def _get_episode_sources(url, tvshowtitle, season, episode):
+    result = client.request(url).content
+    sources = []
+
+    # Season container:
+    # <div class="sp-wrap sp-wrap-default">
+    for season_dom in client.parseDOM(result, 'div', attrs={'class': 'sp-wrap sp-wrap-default'}):
+        # Season header:
+        # <div class="sp-head unfolded" title="Collapse">
+        # STAGIONE 1 - ITA - HDTVMux - NovaRip
+        # </div>
+        try:
+            nfo = client.parseDOM(season_dom, 'div', attrs={'class': 'sp-head.*?'})[0].strip()
+        except Exception:
+            nfo = ''
+
+        if 'SUB' in nfo:
+            log.debug('{m}.{f}: %s: discarded because SUB filter not implemented yet', nfo)
+            continue
+
+        quality = 'HD' if 'HD' in nfo else 'SD'
+        nfo = [nfo] if nfo else []
+
+        # Episode container:
+        # <p>1×01 L inverno sta arrivando ...
+        #   <a href="http://swzz.xyz/link/n4kZK/" target="_blank">Rockfile</a>
+        #   ...
+        # </p>
+        for episode_dom in client.parseDOM(season_dom, 'p'):
+            episode_dom = client.replaceHTMLCodes(episode_dom)
+            episode_dom = episode_dom.replace('<strong>', '')
+            episode_dom = episode_dom.replace('</strong>', '')
+
+            # Match the season x episode title
+            match = re.search(r'(?:^|[^\d])(\d{1,2})x(\d{1,2})\s+?([^-<]*)', unidecode(episode_dom), re.S)
+            if not match:
+                continue
+
+            e_season = str(int(match.group(1)))
+            e_episode = str(int(match.group(2)))
+            e_nfo = match.group(3).strip()
+            e_nfo = [e_nfo] if e_nfo else []
+
+            s_quality = quality
+            s_nfo = e_nfo
+            while True:
+                episode_dom = episode_dom[match.end():]
+
+                # Match the quality and rip tool, if present
+                match = re.match(r'[^\w<]*?([\w\s]+?):', episode_dom)
+                if match and match.group(1).strip():
+                    s_nfo = e_nfo + [match.group(1).strip()]
+                    s_quality = 'HD' if 'HD' in s_nfo[-1] else 'SD'
+
+                # Match the url and host source
+                match = re.search(r'<a\s+?href\s*?=\s*?"([^"]+)".*?>([^<]+)</a>', episode_dom)
+                if not match:
+                    break
+                url = match.group(1)
+                host = match.group(2).strip()
+                sources.append({
+                    'url': url,
+                    'source': unidecode(host),
+                    'quality': s_quality,
+                    'info': ' / '.join(s_nfo + nfo),
+                    'season': e_season,
+                    'episode': e_episode,
+                })
+
+            # urls = client.parseDOM(episode_dom, 'a', ret='href')
+            # hosts = client.parseDOM(episode_dom, 'a')
+            # for url, host in zip(urls, hosts):
+            #     sources.append({
+            #         'url': url,
+            #         'source': unidecode(host),
+            #         'quality': quality,
+            #         'info': ' '.join([s_nfo, nfo]),
+            #         'season': s_season,
+            #         'episode': s_episode,
+            #     })
+
+    return sources
+
+
 def resolve(dummy_module, url):
     result = client.request(url).content if not 'go.php' in url else _cloudflare(url)
 
@@ -144,14 +250,51 @@ def _cloudflare(url):
         'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; rv:38.0) Gecko/20100101 Firefox/38.0',
     }
 
-    with client.Session(headers=headers) as session:
-        res = session.request(url)
+    with client.Session(debug=log.debugactive()) as session:
+        res = session.request(url, headers=headers)
 
         if 'refresh' in res.headers:
             # refresh=8;URL=/cdn-cgi/l/chk_jschl?pass=1457690427.305-qGo9Ho8gdZ
             refresh_timeout = int(res.headers['refresh'][:1])
             refresh_url = res.headers['refresh'][6:]
             time.sleep(refresh_timeout)
-            session.request(urlparse.urljoin(_BASE_URL, refresh_url))
+            session.request(urlparse.urljoin(_BASE_URL, refresh_url), headers=headers)
 
-        return session.request(url).content
+        elif '"challenge-form"' in res.content:
+            base_url = '%s://%s' % (urlparse.urlparse(url).scheme, urlparse.urlparse(url).netloc)
+            jschl_vc = re.compile(r'name="jschl_vc" value="(.+?)"').findall(res.content)[0]
+            init_val = re.compile(r'setTimeout\(function\(\).*?:(.+?)};', re.S).findall(res.content)[0]
+            builder = re.compile(r"challenge-form'\);\s*(.*)a.value", re.S).findall(res.content)[0]
+            decrypted_val = _parseJSString(init_val)
+            for line in builder.split(';'):
+                expr = line.split('=')
+                if len(expr) < 2:
+                    continue
+                line_val = _parseJSString(expr[1])
+                expr_val = str(decrypted_val) + expr[0][-1] + str(line_val)
+                log.debug('{m}.{f}: %s', expr_val)
+                decrypted_val = eval(expr_val)
+                log.debug('{m}.{f}: %s: %d', expr_val, decrypted_val)
+
+            answer = decrypted_val + len(urlparse.urlparse(url).netloc)
+            query = '%s/cdn-cgi/l/chk_jschl?jschl_vc=%s&jschl_answer=%s' % (base_url, jschl_vc, answer)
+
+            if 'type="hidden" name="pass"' in res.content:
+                pass_val = re.compile(r'name="pass" value="(.*?)"').findall(res.content)[0]
+                query = '%s/cdn-cgi/l/chk_jschl?pass=%s&jschl_vc=%s&jschl_answer=%s' % (
+                    base_url, urllib.quote_plus(pass_val), jschl_vc, answer)
+                time.sleep(5)
+
+            session.request(query, headers=headers)
+
+        return session.request(url, headers=headers).content
+
+
+def _parseJSString(string):
+    try:
+        offset = 1 if string[0] == '+' else 0
+        expr_val = string.replace('!+[]', '1').replace('!![]', '1').replace('[]', '0').replace('(', 'str(')[offset:]
+        log.debug('{m}.{f}: %s: %s', string[offset:], expr_val)
+        return int(eval(expr_val))
+    except Exception:
+        return 0
