@@ -57,23 +57,13 @@ def info(paths):
             continue
 
         source = package.find_module(module).get_source()
-        url_patterns = []
-        #
-        # The regular expressions matching the handled urls are found in statements like the following:
-        #   patronvideos = 'http://abysstream.com/videos/([A-Za-z0-9]+)'
-        #
-        for match in re.finditer(r'patronvideos\s*=\s*u?r?("""|\'\'\'|"|\')((?:\\\1|.)*?)\1', source):
-            pat = match.group(2)
-            try:
-                if re.compile(pat):
-                    url_patterns.append(pat)
-                try:
-                    url_top_level_domain = re.match(r'(https?://[\w\.]+)', pat).group(1)
-                    url_patterns.append(url_top_level_domain)
-                except Exception:
-                    pass
-            except Exception as ex:
-                log.notice('{p}.{f}: %s: invalid pattern: %s', pat, ex)
+
+        try:
+            url_patterns = _fetch_patterns_by_ast(source)
+            # url_patterns = _fetch_patterns_by_re(source)
+        except Exception as ex:
+            log.debug('{m}.{f}: %s: %s', module, repr(ex))
+            continue
 
         if not url_patterns:
             log.debug('{p}.{f}: %s: no url pattern found', module)
@@ -84,6 +74,52 @@ def info(paths):
                 'url_patterns': url_patterns,
             })
     return nfo
+
+
+def _fetch_patterns_by_ast(source):
+    import ast
+
+    mod_ast = ast.parse(source)
+    find_videos = [s for s in mod_ast.body if hasattr(s, 'name') and s.name == 'find_videos'][0]
+    patronvideos = [s for s in find_videos.body if hasattr(s, 'targets') and s.targets[0].id == 'patronvideos']
+
+    url_patterns = []
+    for stmt in patronvideos:
+        try:
+            patterns = ast.literal_eval(stmt.value)
+            if isinstance(patterns, basestring):
+                patterns = [patterns]
+        except Exception as ex:
+            log.notice('{p}.{f}: %s: value cannot be evaluated: %s', ast.dump(stmt.value, annotate_fields=False), repr(ex))
+
+        for pat in patterns:
+            try:
+                if re.compile(pat):
+                    url_patterns.append(pat)
+            except Exception as ex:
+                log.notice('{p}.{f}: %s: invalid pattern: %s', pat, repr(ex))
+
+    return url_patterns
+
+
+def _fetch_patterns_by_re(source):
+    #
+    # The regular expressions matching the handled urls are found in statements like the following:
+    #   patronvideos = 'http://abysstream.com/videos/([A-Za-z0-9]+)'
+    #
+    url_patterns = []
+    for match in re.finditer(r'patronvideos\s*=\s*u?r?("""|\'\'\'|"|\')((?:\\\1|.)*?)\1', source):
+        pat = match.group(2)
+        try:
+            if re.compile(pat):
+                url_patterns.append(pat)
+            try:
+                url_top_level_domain = re.match(r'(https?://[\w\.]+)', pat).group(1)
+                url_patterns.append(url_top_level_domain)
+            except Exception:
+                pass
+        except Exception as ex:
+            log.notice('{p}.{f}: %s: invalid pattern: %s', pat, repr(ex))
 
 
 def resolve(module, url):
