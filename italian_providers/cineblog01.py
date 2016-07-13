@@ -70,8 +70,19 @@ def _do_search(query, title, year=None):
     query = urlparse.urljoin(_BASE_URL, query)
 
     result = _cloudflare(query)
+    result = result.decode('utf-8')
 
-    result = result.decode('iso-8859-1').encode('utf-8')
+    # (fixme) parsing this code fragment seems much more reliable than the html code:
+    # <script language="javascript" charset="utf-8">
+    # PDRTJS_settings_7249283_post_90 = {
+    #     "id": "7249283",
+    #     "popup": "off",
+    #     "unique_id": "wp-post-90",
+    #     "title": "Dexter", <-- returned title
+    #     "permalink": "http://www.cb01.co/serietv/dexter/", <-- returned url
+    #     "item_id": "_post_90"
+    # };</script>
+
     result = client.parseDOM(result, 'div', attrs={'class': 'span12 filmbox'})
     result = [(client.parseDOM(i, 'a', ret='href')[0], client.parseDOM(i, 'h1')[0]) for i in result]
     result = [(u, unidecode(client.replaceHTMLCodes(t))) for u, t in result]
@@ -112,6 +123,9 @@ def _get_movie_sources(url, title):
 
         else:
             try:
+                # (fixme) when the streaming is split in parts, this doesn't work:
+                # the host name is wrong and only the first part is returned
+
                 divs = client.parseDOM(tdi, 'div', attrs={'align': 'right'})
                 if divs:
                     nfo = client.parseDOM(divs[0], 'strong')[0]
@@ -250,15 +264,15 @@ def _cloudflare(url):
         'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; rv:38.0) Gecko/20100101 Firefox/38.0',
     }
 
-    with client.Session(debug=log.debugactive()) as session:
-        res = session.request(url, headers=headers)
+    with client.Session(debug=log.debugactive(), headers=headers) as session:
+        res = session.request(url)
 
         if 'refresh' in res.headers:
             # refresh=8;URL=/cdn-cgi/l/chk_jschl?pass=1457690427.305-qGo9Ho8gdZ
             refresh_timeout = int(res.headers['refresh'][:1])
             refresh_url = res.headers['refresh'][6:]
             time.sleep(refresh_timeout)
-            session.request(urlparse.urljoin(_BASE_URL, refresh_url), headers=headers)
+            session.request(urlparse.urljoin(_BASE_URL, refresh_url))
 
         elif '"challenge-form"' in res.content:
             base_url = '%s://%s' % (urlparse.urlparse(url).scheme, urlparse.urlparse(url).netloc)
@@ -272,9 +286,7 @@ def _cloudflare(url):
                     continue
                 line_val = _parseJSString(expr[1])
                 expr_val = str(decrypted_val) + expr[0][-1] + str(line_val)
-                log.debug('{m}.{f}: %s', expr_val)
                 decrypted_val = eval(expr_val)
-                log.debug('{m}.{f}: %s: %d', expr_val, decrypted_val)
 
             answer = decrypted_val + len(urlparse.urlparse(url).netloc)
             query = '%s/cdn-cgi/l/chk_jschl?jschl_vc=%s&jschl_answer=%s' % (base_url, jschl_vc, answer)
@@ -285,16 +297,15 @@ def _cloudflare(url):
                     base_url, urllib.quote_plus(pass_val), jschl_vc, answer)
                 time.sleep(5)
 
-            session.request(query, headers=headers)
+            session.request(query)
 
-        return session.request(url, headers=headers).content
+        return session.request(url).content
 
 
 def _parseJSString(string):
     try:
         offset = 1 if string[0] == '+' else 0
         expr_val = string.replace('!+[]', '1').replace('!![]', '1').replace('[]', '0').replace('(', 'str(')[offset:]
-        log.debug('{m}.{f}: %s: %s', string[offset:], expr_val)
         return int(eval(expr_val))
     except Exception:
         return 0
