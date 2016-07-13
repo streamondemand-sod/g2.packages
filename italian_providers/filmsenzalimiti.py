@@ -18,35 +18,56 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+
+import re
 import urllib
 import urlparse
 
 from unidecode import unidecode
 
+from g2.libraries import log
 from g2.libraries import client
 
 
 _BASE_LINK = 'http://www.filmsenzalimiti.co'
-_SEARCH_LINK = '/?s=%s'
+_SEARCH_QUERY = '/?s=%s'
 
 
 def get_movie(dummy_module, title, **dummy_kwargs):
-    query = _SEARCH_LINK % urllib.quote_plus(title)
+    return _do_search(title)
+
+
+def get_episode(dummy_module, tvshowtitle, season, episode, **dummy_kwargs):
+    items = _do_search(tvshowtitle)
+    for i in range(len(items)):
+        items[i] += (season, episode,)
+
+    return items
+
+
+def _do_search(title):
+    query = _SEARCH_QUERY % urllib.quote_plus(title)
     query = urlparse.urljoin(_BASE_LINK, query)
 
     result = client.request(query).content
-    result = result.decode('iso-8859-1').encode('utf-8')
-
+    result = result.decode('utf-8')
     result = client.parseDOM(result, 'div', attrs={'class': 'post-item-side'})
 
     return [(client.parseDOM(i, 'a', ret='href')[0], client.parseDOM(i, 'img', ret='title')[0]) for i in result]
 
 
-def get_sources(dummy_module, ref):
-    url, title = ref
+def get_sources(dummy_module, vref):
+    if len(vref) == 2:
+        return _get_movie_sources(*vref)
+    elif len(vref) == 4:
+        return _get_episode_sources(*vref)
+    else:
+        return []
 
+
+def _get_movie_sources(url, title):
     result = client.request(url).content
-    result = result.decode('iso-8859-1').encode('utf-8')
+    result = result.decode('utf-8')
 
     result = client.parseDOM(result, 'ul', attrs={'class': 'host'})[1]
 
@@ -77,5 +98,52 @@ def get_sources(dummy_module, ref):
                 'url': url.encode('utf-8'),
                 'info': ('' if not info else '[%s] '%(' '.join(info))) + title,
             })
+
+    return sources
+
+
+def _get_episode_sources(url, tvshowtitle, season, episode):
+    result = client.request(url).content
+    result = result.decode('utf-8')
+
+    result = client.parseDOM(result, 'div', attrs={'class': 'entry'})
+    seasons = client.parseDOM(result[0], 'p')
+    episode_patobj = re.compile(r'(?:^|[^\d])(\d{1,2})x(\d{1,2})\s*')
+    nfo = []
+    quality = 'SD'
+    sources = []
+    for season_dom in seasons:
+        season_dom = client.replaceHTMLCodes(season_dom)
+        if 'stagione' in season_dom.lower():
+            season_dom = season_dom.replace('<strong>', '')
+            season_dom = season_dom.replace('</strong>', '')
+            season_dom = season_dom.replace('<br />', '')
+            nfo = [season_dom.strip()]
+            continue
+
+        while True:
+            match = episode_patobj.search(unidecode(season_dom))
+            if not match:
+                break
+
+            e_season = str(int(match.group(1)))
+            e_episode = str(int(match.group(2)))
+
+            br_position = season_dom.find('<br')
+            episode_dom = season_dom[:br_position]
+            season_dom = season_dom[br_position+4 if br_position > 0 else -1:]
+
+            urls = client.parseDOM(episode_dom, 'a', ret='href')
+            hosts = client.parseDOM(episode_dom, 'a')
+
+            for url, host in zip(urls, hosts):
+                sources.append({
+                    'url': url,
+                    'source': unidecode(host),
+                    'quality': quality,
+                    'info': ' / '.join(nfo),
+                    'season': e_season,
+                    'episode': e_episode,
+                })
 
     return sources
