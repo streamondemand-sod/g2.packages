@@ -116,7 +116,7 @@ def info(paths):
         log.notice('{p}: %s: %s', sodsearch_path, repr(ex))
     excluded_channels = [ec.strip() for ec in excluded_channels if ec.strip()]
 
-    nfo = []
+    nfos = []
     for dummy_package, channel, is_pkg in importer.walk_packages([os.path.join(paths[0], _SOD_ADDON_CHANNELS_PACKAGE)]):
         if is_pkg or channel in excluded_channels:
             continue
@@ -126,14 +126,17 @@ def info(paths):
             log.error('{m}.{f}: from %s import %s: %s', _SOD_ADDON_CHANNELS_PACKAGE, channel, ex)
             continue
         if hasattr(mod, 'search'):
-            nfo.append({
+            nfo = {
                 'name': channel,
                 'content': _channel_option(channel, 'content', ['movie']),
-            })
+            }
+            if 'episode' in nfo['content']:
+                nfo['heavy'] = ['episode']
+            nfos.append(nfo)
 
-    log.notice('{p}: %d channels found', len(nfo))
+    log.notice('{p}: %d channels found', len(nfos))
 
-    return nfo
+    return nfos
 
 
 def get_movie(provider, title, year=None, **kwargs):
@@ -253,7 +256,7 @@ def get_sources(provider, vref):
             log.debug('{m}.{f}.%s: play action not specified for source %s', provider[2], sitem.__dict__)
             continue
 
-        log.debug('{m}.{f}.%s: processing source %s', provider[2], sitem.__dict__)
+        # log.debug('{m}.{f}.%s: processing source %s', provider[2], sitem.__dict__)
 
         stitle = sitem.title        
 
@@ -334,6 +337,6 @@ def get_sources(provider, vref):
 
         sources[url] = source
 
-        log.debug('{m}.{f}.%s: %s', provider[2], sources[url])
+        # log.debug('{m}.{f}.%s: %s', provider[2], sources[url])
 
     return sources.values()
