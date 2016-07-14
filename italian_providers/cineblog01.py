@@ -65,7 +65,7 @@ def get_episode(dummy_module, tvshowtitle, season, episode, **dummy_kwargs):
     return items
 
 
-def _do_search(query, title, year=None):
+def _do_search(query, title, year=0):
     query = query % urllib.quote_plus('%s (%s)' % (title, year) if year else title)
     query = urlparse.urljoin(_BASE_URL, query)
 
@@ -88,7 +88,7 @@ def _do_search(query, title, year=None):
     result = [(u, unidecode(client.replaceHTMLCodes(t))) for u, t in result]
 
     return [i for i in result
-            if not re.search(r'\(\d{4}\)', i[1])
+            if not year or not re.search(r'\(\d{4}\)', i[1])
             or any(x in i[1] for x in ['(%s)'%str(y) for y in range(year-1, year+2)])]
 
 
