@@ -85,8 +85,9 @@ def _fetch_patterns_by_ast(source):
     ]
 
     mod_ast = ast.parse(source)
-    find_videos = [s for s in mod_ast.body if hasattr(s, 'name') and s.name == 'find_videos'][0]
-    patronvideos = [s for s in find_videos.body if hasattr(s, 'targets') and s.targets[0].id in pattern_variables]
+    find_videos = [o for o in mod_ast.body if hasattr(o, 'name') and o.name == 'find_videos'][0]
+    patronvideos = [o for o in ast.walk(find_videos)
+                    if hasattr(o, 'targets') and hasattr(o.targets[0], 'id') and o.targets[0].id in pattern_variables]
 
     url_patterns = []
     for stmt in patronvideos:
