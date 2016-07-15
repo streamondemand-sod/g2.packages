@@ -108,18 +108,21 @@ def _get_movie_sources(url, title):
     result = client.parseDOM(result, 'td', attrs={})
     result = reduce(lambda x, y: x+y, [client.parseDOM(t, 'td', attrs={}) for t in result], [])
 
+    start_streaming_area = re.compile(r'Streaming:', re.I)
+    stop_streaming_area = re.compile(r'(Download|Streaming\s+?3D):', re.I)
+
+    info = []
     sources = []
     quality = 'SD'
     sources_area = False
-    info = []
     for tdi in result:
-        if 'Streaming' in tdi:
+        if stop_streaming_area.search(tdi):
+            sources_area = False
+
+        elif start_streaming_area.search(tdi):
             sources_area = True
             if 'HD' in tdi:
                 quality = 'HD'
-
-        elif 'Download' in tdi:
-            sources_area = False
 
         else:
             try:
