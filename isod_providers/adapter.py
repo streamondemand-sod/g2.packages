@@ -310,14 +310,12 @@ def get_sources(provider, vref):
         sitem.fulltitle = sitem.fulltitle.decode('utf-8').strip()
         if not info_tags:
             info_tags = [sitem.title, sitem.fulltitle]
-        else:
-            info_tags.append(title.decode('utf-8'))
 
         source = {
             'url': url,
             'source': host,
             'quality': quality,
-            'info': ' '.join(info_tags),
+            'info': ' '.join(info_tags+[title.decode('utf-8')]),
         }
 
         # (fixme): filter SUB ITA vs ITA
