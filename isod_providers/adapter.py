@@ -37,6 +37,9 @@ _DEFAULT_EXCLUDED_CHANNELS = [
 ]
 
 _CHANNELS_OPTIONS = {
+    'casacinema': {
+        'content': ['movie', 'episode'],
+    },
     'cineblog01': {
         'remove_chars': ':',
         'use_year': ' (%s)',
@@ -44,14 +47,14 @@ _CHANNELS_OPTIONS = {
         'ignore_info_tags': ['Streaming HD:', 'Streaming:'],
         'content': ['movie'], # scraper fails anti-cloudflare on serietv search
     },
-    'casacinema': {
-        'content': ['movie', 'episode'],
-    },
     'cinemalibero': {
         'content': ['movie'], # search fails to return existing series
     },
     'darkstream': {
         'content': ['movie'], # scraper fails to retrieve the sources (it is the same as movie!)
+    },
+    'eurostreaming': {
+        'content': ['movie', 'episode'],
     },
     'eurostreaminginfo': {
         'content': ['movie'], # scraper fails to retrieve the sources (it is the same as movie!)
@@ -71,6 +74,12 @@ _CHANNELS_OPTIONS = {
     'guardarefilm': {
         'content': ['movie', 'episode'],
     },
+    'guardaserie': {
+        'content': ['movie', 'episode'],
+    },
+    'hdstreamingit': {
+        'content': ['movie', 'episode'],
+    },
     'itafilmtv': {
         'content': ['movie'], # scraper fails to retrieve the sources
     },
@@ -80,16 +89,28 @@ _CHANNELS_OPTIONS = {
     'italianstream': {
         'content': ['movie', 'episode'],
     },
+    'leserietv': {
+        'content': ['movie', 'episode'],
+    },
     'liberoita': {
         'content': ['movie', 'episode'],
     },
     'piratestreaming': {
         'content': ['movie', 'episode'],
     },
+    'seriehd': {
+        'content': ['movie', 'episode'],
+    },
     'solostreaming': {
         'content': ['movie', 'episode'],
     },
     'tantifilm': {
+        'content': ['movie', 'episode'],
+    },
+    'toonitalia': {
+        'content': ['movie', 'episode'],
+    },
+    'vediserie': {
         'content': ['movie', 'episode'],
     },
 }
@@ -140,7 +161,6 @@ def info(paths):
 
 
 def get_movie(provider, title, year=None, **kwargs):
-    from servers import servertools
     from core.item import Item
     from core import logger
     logger.log_enable(False)
@@ -173,7 +193,6 @@ def get_movie(provider, title, year=None, **kwargs):
 
 
 def get_episode(provider, tvshowtitle, season, episode, **kwargs):
-    from servers import servertools
     from core.item import Item
     from core import logger
     logger.log_enable(False)
@@ -205,7 +224,7 @@ def get_episode(provider, tvshowtitle, season, episode, **kwargs):
 
 
 def get_sources(provider, vref):
-    from servers import servertools
+    from core import servertools
     from core.item import Item
 
     try:
@@ -256,7 +275,7 @@ def get_sources(provider, vref):
             log.debug('{m}.{f}.%s: play action not specified for source %s', provider[2], sitem.__dict__)
             continue
 
-        # log.debug('{m}.{f}.%s: processing source %s', provider[2], sitem.__dict__)
+        log.debug('{m}.{f}.%s: processing source %s', provider[2], sitem.__dict__)
 
         stitle = sitem.title        
 
@@ -280,15 +299,18 @@ def get_sources(provider, vref):
 
         stitle = re.sub(r'\[COLOR\s+[^\]]+\]([^\[]*)\[/COLOR\]', collect_color_tags, stitle)
         stitle = re.sub(r'\[/?COLOR[^\]]*\]', '', stitle)
-        # Extract the host if possible
+
         try:
-            host = re.search(r'\s+-\s+\[([^\]]+)\]', stitle).group(1)
+            host = sitem.server
         except Exception:
             try:
-                host = re.search(r'\[([^\]]+)\]', stitle).group(1)
+                host = re.search(r'\s+-\s+\[([^\]]+)\]', stitle).group(1)
             except Exception:
-                host = ''
-        host = host.split(' ')[-1].translate(None, '@')
+                try:
+                    host = re.search(r'\[([^\]]+)\]', stitle).group(1)
+                except Exception:
+                    host = ''
+            host = host.split(' ')[-1].translate(None, '@')
 
         if not hasattr(mod, sitem.action):
             # No channel specific resolver

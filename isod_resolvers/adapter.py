@@ -110,6 +110,12 @@ def _fetch_patterns_by_ast(source):
 
 def resolve(module, url):
     urls = getattr(__import__(_SOD_ADDON_SERVERS_PACKAGE, globals(), locals(), [module[2]], -1), module[2]).get_video_url(url)
+    if not urls:
+        return None
+
     # (fixme) the url resolution might return multiple urls with different stream quality,
     # this should be handled in the resolvers.resolve.
-    return None if not urls else urls[0][1]
+    for url in urls:
+        log.debug('{m}.{f}: %s', url)
+
+    return urls[-1][1]
