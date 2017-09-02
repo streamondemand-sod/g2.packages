@@ -32,7 +32,7 @@ from g2.libraries import client
 from .lib import jsunpack
 
 
-_BASE_URL = 'http://www.cb01.co'
+_BASE_URL = 'https://www.cb01.uno'
 _SEARCH_MOVIE_QUERY = '/?s=%s'
 _SEARCH_TVSHOW_QUERY = '/serietv/?s=%s'
 
