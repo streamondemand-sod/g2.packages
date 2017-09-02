@@ -178,7 +178,7 @@ def get_movie(provider, title, year=None, **kwargs):
         search_terms = title
         if year and _channel_option(provider[2], 'use_year'):
             search_terms += _channel_option(provider[2], 'use_year') % year
-        items = mod.search(Item(), urllib.quote_plus(search_terms))
+        items = mod.search(Item(extra='movie'), urllib.quote_plus(search_terms))
         if not items:
             raise Exception('movie not found')
     except Exception as ex:
