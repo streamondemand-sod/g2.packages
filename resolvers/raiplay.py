@@ -20,6 +20,9 @@
 """
 
 
+import urllib
+import urlparse
+
 from g2.libraries import log
 from g2.libraries import client
 
@@ -30,12 +33,51 @@ info = {
 }
 
 _BASE_URL = "http://www.rai.it"
+_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2956.0 Safari/537.36"
 
 
 def resolve(dummy_module, url):
+    log.debug('{m}.{f}: URL: %s', url)
+    url = _fetch_url(url)
+
+    if url.startswith('http://mediapolis.rai.it/relinker/relinkerServlet.htm') or \
+       url.startswith('http://mediapolisvod.rai.it/relinker/relinkerServlet.htm') or \
+       url.startswith('http://mediapolisevent.rai.it/relinker/relinkerServlet.htm'):
+        log.debug('{m}.{f}: Relinker URL: %s', url)
+        url = _relinker(url)
+
+    log.debug('{m}.{f}: Resolved URL: %s', url)
+    return url
+
+
+def _fetch_url(url):
     with client.Session() as session:
         video = session.get(url).json()
         if not video.get('pathFirstItem'):
             return None
         video = session.get(_BASE_URL+video['pathFirstItem']).json()
         return None if not video.get('video') else video['video'].get('contentUrl')
+
+
+def _relinker(url):
+    # output=20 url in body
+    # output=23 HTTP 302 redirect
+    # output=25 url and other parameters in body, space separated
+    # output=44 XML (not well formatted) in body
+    # output=47 json in body
+    # pl=native,flash,silverlight
+    # A stream will be returned depending on the UA (and pl parameter?)
+    scheme, netloc, path, params, query, fragment = urlparse.urlparse(url)
+    query = urlparse.parse_qs(query)
+    query['output'] = '20'
+    query = urllib.urlencode(query, True)
+    url = urlparse.urlunparse((scheme, netloc, path, params, query, fragment))
+            
+    with client.Session() as session:
+        session.headers.update({'User-Agent': _USER_AGENT})
+        url = session.get(url).content.strip()
+    
+    # Workaround to normalize URL if the relinker doesn't
+    url = urllib.quote(url, safe="%/:=&?~#+!$,;'@()*[]")
+    
+    return url

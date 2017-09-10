@@ -36,6 +36,8 @@ from ..lib.fuzzywuzzy import fuzz
 _BASE_URL = "http://www.rai.it"
 # From http://www.raiplay.it/mobile/prod/config/RaiPlay_Config.json
 _AZ_TVSHOW_PATH = "/dl/RaiTV/RaiPlayMobile/Prod/Config/programmiAZ-elenco.json"
+# (fixme)
+_MIN_FUZZINESS_VALUE = 84
 
 
 def get_movie(dummy_module, title, year='0', **dummy_kwargs):
@@ -51,15 +53,18 @@ def get_movie(dummy_module, title, year='0', **dummy_kwargs):
     items = []
     try:
         videos = cache.get(_get_raiplay_videos, 24*60)
-        items = [(i.get('PathID'), i.get('name'), i.get('PLRanno'), '/'.join(i.get('channel', [])))
-                 for i in videos[title[0].upper()]
+        items = [(i.get('PathID'), i.get('name'), int(i.get('PLRanno', '0')), '/'.join(i.get('channel', [])))
+                 for az in videos.itervalues()
+                 for i in az
                  if i.get('tipology') == 'Film'
                  and i.get('PathID')
-                 and fuzz.token_sort_ratio(i.get('name'), title) >= 80]
-    except Exception as ex:
-        log.debug('{m}.{f}: %s', ex)
+                 and _match_title(i.get('name'), title)]
 
-    log.debug('{m}.{f}: items=%s', items)
+        if year:
+            items = [i for i in items if not i[2] or any(i[2] == y for y in range(year-1, year+2))]
+
+    except Exception as ex:
+        log.notice('{m}.{f}: %s', ex)
 
     return items
 
@@ -67,6 +72,19 @@ def get_movie(dummy_module, title, year='0', **dummy_kwargs):
 def _get_raiplay_videos():
     with client.Session() as session:
         return session.get(_BASE_URL+_AZ_TVSHOW_PATH).json()
+
+
+def _match_title(mtitle, title):
+    if ('-' in mtitle) == ('-' in title):
+        ftsr = fuzz.token_sort_ratio(mtitle, title)
+    elif '-' in title:
+        ftsr = max(fuzz.token_sort_ratio(mtitle, title.split('-')[0]),
+                   fuzz.token_sort_ratio(mtitle, title.split('-')[1]))
+    else:
+        ftsr = max(fuzz.token_sort_ratio(mtitle.split('-')[0], title),
+                   fuzz.token_sort_ratio(mtitle.split('-')[1], title))
+
+    return ftsr >= _MIN_FUZZINESS_VALUE
 
 
 def get_sources(dummy_module, vref):
