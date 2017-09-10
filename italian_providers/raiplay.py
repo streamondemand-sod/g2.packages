@@ -76,12 +76,3 @@ def get_sources(dummy_module, vref):
         'quality': 'SD',
         'url': vref[0],
         'info': vref[3]}]
-
-
-def resolve(dummy_module, url):
-    with client.Session() as session:
-        video = session.get(url).json()
-        if not video.get('pathFirstItem'):
-            return None
-        video = session.get(_BASE_URL+video['pathFirstItem']).json()
-        return None if not video.get('video') else video['video'].get('contentUrl')
