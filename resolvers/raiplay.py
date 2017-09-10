@@ -25,7 +25,7 @@ from g2.libraries import client
 
 
 info = {
-    # (fixme) the 2nd domains is needed for an issue in resolvers._top_domain
+    # (fixme) the 2nd domains is needed for an issue in resolvers._top_domain.
     'domains': ['rai.it', 'www.rai.it'],
 }
 
