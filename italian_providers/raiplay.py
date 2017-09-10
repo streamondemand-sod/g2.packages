@@ -69,7 +69,6 @@ def _get_raiplay_videos():
         return session.get(_BASE_URL+_AZ_TVSHOW_PATH).json()
 
 
-# (fixme) this should be the default action for providers if the method is missing
 def get_sources(dummy_module, vref):
     return [{
         'source': 'raiplay',

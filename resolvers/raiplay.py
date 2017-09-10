@@ -25,7 +25,8 @@ from g2.libraries import client
 
 
 info = {
-    'domains': ['rai.it'],
+    # (fixme) the 2nd domains is needed for an issue in resolvers._top_domain
+    'domains': ['rai.it', 'www.rai.it'],
 }
 
 _BASE_URL = "http://www.rai.it"
