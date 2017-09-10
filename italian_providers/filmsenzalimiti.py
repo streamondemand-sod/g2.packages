@@ -29,6 +29,8 @@ from g2.libraries import log
 from g2.libraries import client
 
 
+info = { 'enabled': False }
+
 _BASE_LINK = 'http://www.filmsenzalimiti.co'
 _SEARCH_QUERY = '/?s=%s'
 

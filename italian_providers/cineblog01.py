@@ -32,6 +32,8 @@ from g2.libraries import client
 from .lib import jsunpack
 
 
+info = { 'enabled': False }
+
 _BASE_URL = 'https://www.cb01.uno'
 _SEARCH_MOVIE_QUERY = '/?s=%s'
 _SEARCH_TVSHOW_QUERY = '/serietv/?s=%s'
