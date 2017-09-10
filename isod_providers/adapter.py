@@ -27,6 +27,7 @@ import importer
 from unidecode import unidecode
 
 from g2.libraries import log
+from g2.libraries import client
 
 
 _SOD_ADDON_CHANNELS_PACKAGE = 'channels'
@@ -128,18 +129,28 @@ def info(paths):
     # let's have it hardcoded
     paths.append(os.path.join(paths[0], 'lib'))
 
-    excluded_channels = _DEFAULT_EXCLUDED_CHANNELS
-    try:
-        sodsearch_path = os.path.join(paths[0], 'resources', 'sodsearch.txt')
-        with open(sodsearch_path) as fil:
-            excluded_channels.extend(fil.readlines())
-    except Exception as ex:
-        log.notice('{p}: %s: %s', sodsearch_path, repr(ex))
-    excluded_channels = [ec.strip() for ec in excluded_channels if ec.strip()]
+    active_channels = []
+    channels_dir = os.path.join(paths[0], 'channels')
+    for channel in os.listdir(channels_dir):
+        if os.path.basename(channel) in _DEFAULT_EXCLUDED_CHANNELS:
+            continue
+        if not channel.endswith('.xml') or not os.path.isfile(os.path.join(channels_dir, os.path.splitext(channel)[0]+'.py')):
+            continue
+        with open(os.path.join(channels_dir, channel)) as fil:
+            xml = fil.read()
+            active = client.parseDOM(xml, 'active')
+            if not active or active[0].lower() != 'true':
+                continue
+            settings = client.parseDOM(xml, 'settings')
+            for setting in settings:
+                active = client.parseDOM(setting, 'id')
+                if active and active[0].lower() == 'include_in_global_search':
+                    active_channels.append(os.path.splitext(channel)[0])
+                    break
 
     nfos = []
     for dummy_package, channel, is_pkg in importer.walk_packages([os.path.join(paths[0], _SOD_ADDON_CHANNELS_PACKAGE)]):
-        if is_pkg or channel in excluded_channels:
+        if is_pkg or channel not in active_channels:
             continue
         try:
             mod = getattr(__import__(_SOD_ADDON_CHANNELS_PACKAGE, globals(), locals(), [channel], -1), channel)
@@ -155,7 +166,7 @@ def info(paths):
                 nfo['heavy'] = ['episode']
             nfos.append(nfo)
 
-    log.notice('{p}: %d channels found', len(nfos))
+    log.notice('{p}: %d active channels found', len(nfos))
 
     return nfos
 
