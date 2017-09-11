@@ -37,66 +37,22 @@ _DEFAULT_EXCLUDED_CHANNELS = [
     'mondolunatico',    # sometimes it fires up a captcha dialog
 ]
 
+# For tv series: reviewd on 11-Sep-2017 based xml content and HoC searches (SOD 5.8.8)
 _CHANNELS_OPTIONS = {
-    'casacinema': {
-        'content': ['movie', 'episode'],
-    },
     'cineblog01': {
-        'remove_chars': ':',
-        'use_year': ' (%s)',
+        'remove_chars': ':',                # cb01 doesn't like the : in the search title
+        'use_year': ' (%s)',                # adding (YEAR) at the end of the title restrict the search
         'source_quality_override': True,
         'ignore_info_tags': ['Streaming HD:', 'Streaming:'],
-        'content': ['movie'], # scraper fails anti-cloudflare on serietv search
+        'content': [],                      # cb01 completely fails
     },
-    'cinemalibero': {
-        'content': ['movie'], # search fails to return existing series
-    },
-    'darkstream': {
-        'content': ['movie'], # scraper fails to retrieve the sources (it is the same as movie!)
-    },
-    'eurostreaming': {
+    'guardaserieonline': {
         'content': ['movie', 'episode'],
     },
-    'eurostreaminginfo': {
-        'content': ['movie'], # scraper fails to retrieve the sources (it is the same as movie!)
-    },
-    'filmpertutti': {
+    'ilgeniodellostreaming': {
         'content': ['movie', 'episode'],
-    },
-    'filmsenzalimiti': {
-        'content': ['movie'], # scraper return a small subset of the episodes
-    },
-    'filmstream': {
-        'content': ['movie'], # scraper return a small subset of the episodes
-    },
-    'filmstreampw': {
-        'content': ['movie'], # likely fake content
-    },
-    'guardarefilm': {
-        'content': ['movie', 'episode'],
-    },
-    'guardaserie': {
-        'content': ['movie', 'episode'],
-    },
-    'hdstreamingit': {
-        'content': ['movie', 'episode'],
-    },
-    'itafilmtv': {
-        'content': ['movie'], # scraper fails to retrieve the sources
     },
     'italiafilm': {
-        'content': ['movie', 'episode'],
-    },
-    'italianstream': {
-        'content': ['movie', 'episode'],
-    },
-    'leserietv': {
-        'content': ['movie', 'episode'],
-    },
-    'liberoita': {
-        'content': ['movie', 'episode'],
-    },
-    'piratestreaming': {
         'content': ['movie', 'episode'],
     },
     'seriehd': {
@@ -105,10 +61,7 @@ _CHANNELS_OPTIONS = {
     'solostreaming': {
         'content': ['movie', 'episode'],
     },
-    'tantifilm': {
-        'content': ['movie', 'episode'],
-    },
-    'toonitalia': {
+    'streamblog': {
         'content': ['movie', 'episode'],
     },
     'vediserie': {
