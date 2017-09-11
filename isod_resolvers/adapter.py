@@ -25,14 +25,12 @@ import re
 import importer
 
 from g2.libraries import log
+from g2.libraries import client
 
 
 _SOD_ADDON_SERVERS_PACKAGE = 'servers'
 
-_EXCLUDED_SERVERS = [
-    'servertools',      # Not a server
-    'longurl',          # Looks like a short url resolver
-]
+_DEFAULT_EXCLUDED_SERVERS = []
 
 
 def info(paths):
@@ -43,35 +41,52 @@ def info(paths):
     # let's have it hardcoded
     paths.append(os.path.join(paths[0], 'lib'))
 
-    nfo = []
-    for package, module, is_pkg in importer.walk_packages([os.path.join(paths[0], _SOD_ADDON_SERVERS_PACKAGE)]):
-        if is_pkg or module in _EXCLUDED_SERVERS:
+    active_servers = {}
+    servers_dir = os.path.join(paths[0], 'servers')
+    for server in os.listdir(servers_dir):
+        if os.path.basename(server) in _DEFAULT_EXCLUDED_SERVERS or \
+           os.path.splitext(server)[1] != '.xml' or \
+           not os.path.isfile(os.path.join(servers_dir, os.path.splitext(server)[0]+'.py')):
             continue
-        log.debug('{p}.{f}: from %s import %s (%s)', _SOD_ADDON_SERVERS_PACKAGE, module, type(module))
+        with open(os.path.join(servers_dir, server)) as fil:
+            xml = fil.read()
+            active = client.parseDOM(xml, 'active')
+            if not active or active[0].lower() != 'true':
+                continue
+            patterns = client.parseDOM(xml, 'patterns')
+            server = os.path.splitext(server)[0]
+            for pattern in patterns:
+                pattern = client.parseDOM(pattern, 'pattern')
+                for pat in pattern:
+                    if pat:
+                        try:
+                            active_servers[server].append(pat)
+                        except Exception:
+                            active_servers[server] = [pat]
+
+    nfo = []
+    for dummy_package, module, is_pkg in importer.walk_packages([os.path.join(paths[0], _SOD_ADDON_SERVERS_PACKAGE)]):
+        if is_pkg:
+            continue
+        if not active_servers.get(module):
+            log.debug('{p}.{f}: server %s not active or url patterns not found')
+            continue
+
+        log.debug('{p}.{f}: from %s import %s', _SOD_ADDON_SERVERS_PACKAGE, module)
         try:
             mod = getattr(__import__(_SOD_ADDON_SERVERS_PACKAGE, globals(), locals(), [module], -1), module)
         except Exception as ex:
             log.error('{p}.{f}: from %s import %s: %s', _SOD_ADDON_SERVERS_PACKAGE, module, ex)
             continue
         if not hasattr(mod, 'get_video_url'):
+            log.debug('{p}.{f}: server %s without get_video_url function')
             continue
 
-        source = package.find_module(module).get_source()
-
-        try:
-            url_patterns = _fetch_patterns_by_ast(source)
-        except Exception as ex:
-            log.debug('{m}.{f}: %s: %s', module, repr(ex))
-            continue
-
-        if not url_patterns:
-            log.debug('{p}.{f}: %s: no url pattern found', module)
-        else:
-            log.debug('{p}.{f}: %s: url patterns: %s', module, ' | '.join(url_patterns))
-            nfo.append({
-                'name': module,
-                'url_patterns': url_patterns,
-            })
+        log.debug('{p}.{f}: %s: url patterns: %s', module, ' | '.join(active_servers[module]))
+        nfo.append({
+            'name': module,
+            'url_patterns': active_servers[module],
+        })
     return nfo
 
 
