@@ -115,8 +115,8 @@ def info(paths):
                 'name': channel,
                 'content': _channel_option(channel, 'content', ['movie']),
             }
-            if 'episode' in nfo['content']:
-                nfo['heavy'] = ['episode']
+            #if 'episode' in nfo['content']:
+            #    nfo['heavy'] = ['episode']
             nfos.append(nfo)
 
     log.notice('{p}: %d active channels found', len(nfos))
